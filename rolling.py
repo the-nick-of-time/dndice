@@ -85,98 +85,10 @@ class Roll(list):
     def __repr__(self):
         return self.__str__()
 
-    # def __add__(self, other):
-    #     return Result(rolls=[self]) + other
-    #
-    # def __sub__(self, other):
-    #     return Result(rolls=[self]) - other
-
-
-# class Result:
-#     def __init__(self, initial=0, rolls=[]):
-#         # self.tokens = tokens
-#         self.rolls = rolls
-#         self.value = initial
-#         self.constants = 0
-#
-#     def __str__(self):
-#         rolls = '+'.join([str(item) for item in self.rolls])
-#         # mod = self.constants
-#         # return '{} + {}'.format(rolls, mod)
-#         return '{}+{}={}'.format(rolls, self.constants, self.value)
-#
-#     def __add__(self, other):
-#         # print(self, other)
-#         if (isinstance(other, Roll)):
-#             self.rolls.append(other)
-#             self.value += sum(other)
-#         elif (isinstance(other, list)):
-#             self.value += sum(other)
-#             self.constants += other.constants
-#         elif (isinstance(other, Result)):
-#             self.rolls.extend(other.rolls)
-#             self.constants += other.constants
-#             self.value += other.value
-#         else:
-#             self.constants += other
-#             self.value += other
-#         return self
-#
-#     def __radd__(self, other):
-#         return self.__add__(other)
-#
-#     def __sub__(self, other):
-#         if (isinstance(other, Roll))
-#
-#     def __repr__(self):
-#         return self.__str__()
-#
-#     def __int__(self):
-#         return self.value
-
 
 # noinspection PyPep8Naming
 def roll(s, modifiers=0, option='execute'):
     """Roll dice and do arithmetic."""
-
-    operators = {'d': Operator('d', 7, 2, roll_basic, 'l'),
-                 'da': Operator('da', 7, 2, roll_average, 'l'),
-                 'dc': Operator('dc', 7, 2, roll_critical, 'l'),
-                 'dm': Operator('dm', 7, 2, roll_max, 'l'),
-                 'h': Operator('h', 6, 2, take_high, 'r'),
-                 'l': Operator('l', 6, 2, take_low, 'r'),
-                 'f': Operator('f', 6, 2, floor_val, 'r'),
-                 'c': Operator('c', 6, 2, ceil_val, 'r'),
-                 'r': Operator('r', 6, 2, reroll_once_on, 'r'),
-                 'R': Operator('R', 6, 2, reroll_unconditional_on, 'r'),
-                 'r<': Operator('r<', 6, 2, reroll_once_lower, 'r'),
-                 'R<': Operator('R<', 6, 2, reroll_unconditional_lower, 'r'),
-                 'rl': Operator('rl', 6, 2, reroll_once_lower, 'r'),
-                 'Rl': Operator('Rl', 6, 2, reroll_unconditional_lower, 'r'),
-                 'r>': Operator('r>', 6, 2, reroll_once_higher, 'r'),
-                 'R>': Operator('R>', 6, 2, reroll_unconditional_higher, 'r'),
-                 'rh': Operator('rh', 6, 2, reroll_once_higher, 'r'),
-                 'Rh': Operator('Rh', 6, 2, reroll_unconditional_higher, 'r'),
-                 '^': Operator('^', 5, 2, lambda x, y: x ** y, 'lr'),
-                 'm': Operator('m', 4, 1, lambda x: -x, 'r'),
-                 'p': Operator('p', 4, 1, lambda x: x, 'r'),
-                 '*': Operator('*', 3, 2, lambda x, y: x * y, 'lr'),
-                 '/': Operator('/', 3, 2, lambda x, y: x / y, 'lr'),
-                 '%': Operator('%', 3, 2, lambda x, y: x % y, 'lr'),
-                 '-': Operator('-', 2, 2, lambda x, y: x - y, 'lr'),
-                 '+': Operator('+', 2, 2, lambda x, y: x + y, 'lr'),
-                 '>': Operator('>', 1, 2, lambda x, y: x > y, 'lr'),
-                 'gt': Operator('gt', 1, 2, lambda x, y: x > y, 'lr'),
-                 '>=': Operator('>=', 1, 2, lambda x, y: x >= y, 'lr'),
-                 'ge': Operator('ge', 1, 2, lambda x, y: x >= y, 'lr'),
-                 '<': Operator('<', 1, 2, lambda x, y: x < y, 'lr'),
-                 'lt': Operator('lt', 1, 2, lambda x, y: x < y, 'lr'),
-                 '<=': Operator('<=', 1, 2, lambda x, y: x <= y, 'lr'),
-                 'le': Operator('le', 1, 2, lambda x, y: x <= y, 'lr'),
-                 '=': Operator('=', 1, 2, lambda x, y: x == y, 'lr'),
-                 '|': Operator('|', 1, 2, lambda x, y: x or y, 'lr'),
-                 '&': Operator('&', 1, 2, lambda x, y: x and y, 'lr'),
-                 }
 
     if isinstance(s, (float, int)):
         # If you're naughty and pass a number in...
@@ -185,31 +97,29 @@ def roll(s, modifiers=0, option='execute'):
     elif s == '':
         return 0 + modifiers
     elif option == 'execute':
-        return execute(tokens(s, operators), operators) + modifiers
+        return execute(tokens(s)) + modifiers
     elif option == 'critical':
-        T = tokens(s, operators)
-        T = critify(T, operators)
-        return execute(T, operators) + modifiers
+        T = tokens(s)
+        T = critify(T)
+        return execute(T) + modifiers
     elif option == 'average':
-        T = tokens(s, operators)
-        T = averageify(T, operators)
-        return execute(T, operators) + modifiers
+        T = tokens(s)
+        T = averageify(T)
+        return execute(T) + modifiers
     elif option == 'multipass':
         import re
         pattern = '\(.*\)'
         new = re.sub(pattern, lambda m: str(roll(m.group(0))), s)
-        T = tokens(new, operators)
+        T = tokens(new)
         if modifiers:
-            T.append(string_to_operator('+', operators))
+            T.append(string_to_operator('+'))
             T.append(modifiers)
         return display_multipass(T, operators)
     elif option == 'multipass_critical':
         # TODO: add modifiers into the passes
         import re
-        pattern = '\(.*\)'
-        new = re.sub(pattern, lambda m: str(roll(m.group(0))), s)
-        T = tokens(s, operators)
-        T = critify(T, operators)
+        T = tokens(s)
+        T = critify(T)
         if modifiers:
             T.append(string_to_operator('+'))
             T.append(modifiers)
@@ -225,8 +135,10 @@ def roll(s, modifiers=0, option='execute'):
 call = roll  # A hacky workaround for backwards compatibility
 
 
-def tokens(s, operators):
-    """Split a string into tokens for use with execute()"""
+def tokens(s):
+    """Split a string into tokens for use with execute()
+    :rtype: List[int|float|Operator]
+    """
     # Every character that could be part of an operator
     possibilities = ''.join([str(item) for item in operators])
     curr_num = []
@@ -237,7 +149,7 @@ def tokens(s, operators):
         char = s[i]
         if char in string.digits:
             if curr_op:
-                op = string_to_operator(''.join(curr_op), operators)
+                op = string_to_operator(''.join(curr_op))
                 tokenlist.append(op)
                 curr_op = []
             curr_num.append(char)
@@ -248,10 +160,10 @@ def tokens(s, operators):
                 tokenlist.append(int(''.join(curr_num)))
                 curr_num = []
             if char == '+' and (i == 0 or s[i - 1] in possibilities + '('):
-                tokenlist.append(string_to_operator('p', operators))
+                tokenlist.append(string_to_operator('p'))
                 curr_op = []
             elif char == '-' and (i == 0 or s[i - 1] in possibilities + '('):
-                tokenlist.append(string_to_operator('m', operators))
+                tokenlist.append(string_to_operator('m'))
                 curr_op = []
             else:
                 if len(curr_op) == 0:
@@ -265,12 +177,12 @@ def tokens(s, operators):
                 else:
                     # Two separate operators; push out the old one and start
                     # collecting the new one
-                    op = string_to_operator(''.join(curr_op), operators)
+                    op = string_to_operator(''.join(curr_op))
                     tokenlist.append(op)
                     curr_op = [char]
         elif char == '[':
             if curr_op:
-                tokenlist.append(string_to_operator(''.join(curr_op), operators))
+                tokenlist.append(string_to_operator(''.join(curr_op)))
                 curr_op = []
             # Start a list of floats
             sidelist = []
@@ -281,7 +193,7 @@ def tokens(s, operators):
             tokenlist.append(read_list(''.join(sidelist)))
         elif char == 'F':
             if curr_op:
-                tokenlist.append(string_to_operator(''.join(curr_op), operators))
+                tokenlist.append(string_to_operator(''.join(curr_op)))
                 curr_op = []
             # Fudge die
             tokenlist.append([-1, 0, 1])
@@ -293,7 +205,7 @@ def tokens(s, operators):
     return tokenlist
 
 
-def execute(T, operators):
+def execute(T):
     oper = []
     # nums = [Result()]
     nums = []
@@ -337,7 +249,7 @@ def deep_sum(l, starting=0):
     return s
 
 
-def string_to_operator(s, operators):
+def string_to_operator(s):
     try:
         return operators[s]
     except KeyError:
@@ -353,28 +265,28 @@ def read_list(s, mode='float'):
         return [int(item) for item in a]
 
 
-def critify(T, operators):
+def critify(T):
     # Note: crit is superseded by maximum
     # Though why you're using roll_max anyway is a mystery
     for (i, item) in enumerate(T):
         if item == 'd' or item == 'da':
-            T[i] = string_to_operator('dc', operators)
+            T[i] = string_to_operator('dc')
     return T
 
 
-def averageify(T, operators):
+def averageify(T):
     # Note: average is superseded by crit or max
     for (i, item) in enumerate(T):
         if item == 'd':
-            T[i] = string_to_operator('da', operators)
+            T[i] = string_to_operator('da')
     return T
 
 
-def maxify(T, operators):
+def maxify(T):
     # Max supersedes all
     for (i, item) in enumerate(T):
         if item == 'd' or item == 'da' or item == 'dc':
-            T[i] = string_to_operator('dm', operators)
+            T[i] = string_to_operator('dm')
     return T
 
 
@@ -403,7 +315,6 @@ def roll_basic(number, sides):
     result = Roll()
     result.die = sides
     # result.discards = [[] for all in range(number)]
-    rollList = []
     for all in range(number):
         result.append(single_die(sides))
     result.sort()
@@ -424,7 +335,6 @@ def roll_critical(number, sides):
     result = Roll()
     result.die = sides
     # result.discards = [[] for all in range(number)]
-    rollList = []
     for all in range(2 * number):
         result.append(single_die(sides))
     result.sort()
@@ -437,11 +347,10 @@ def roll_max(number, sides):
     result = Roll()
     result.die = sides
     # result.discards = [[] for all in range(number)]
-    rollList = []
     if isinstance(sides, list):
-        result.extend([max(sides) for all in range(number)])
+        result.extend([max(sides)] * number)
     else:
-        result.extend([sides for all in range(number)])
+        result.extend([sides] * number)
     return result
 
 
@@ -572,7 +481,7 @@ class MultipassResult:
         return r + ' = ' + t
 
     def __int__(self):
-        return self.passes[-1]
+        return self.final
 
     def __eq__(self, other):
         if isinstance(other, int):
@@ -582,12 +491,12 @@ class MultipassResult:
 
     def __add__(self, other):
         if isinstance(other, MultipassResult):
-            self.postrolls.append(string_to_operator('+', self.ops))
+            self.postrolls.append(string_to_operator('+'))
             self.postrolls.extend(other.postrolls)
             self.final += other.final
             return self
         elif isinstance(other, int):
-            self.postrolls.append(string_to_operator('+', self.ops))
+            self.postrolls.append(string_to_operator('+'))
             self.postrolls.append(other)
             self.final += other
             return self
@@ -607,6 +516,47 @@ def display_multipass(T, operators):
     # return '\n'.join(out)
     return MultipassResult(result, operators)
 
+
+### Constants ###
+
+operators = {'d': Operator('d', 7, 2, roll_basic, 'l'),
+             'da': Operator('da', 7, 2, roll_average, 'l'),
+             'dc': Operator('dc', 7, 2, roll_critical, 'l'),
+             'dm': Operator('dm', 7, 2, roll_max, 'l'),
+             'h': Operator('h', 6, 2, take_high, 'r'),
+             'l': Operator('l', 6, 2, take_low, 'r'),
+             'f': Operator('f', 6, 2, floor_val, 'r'),
+             'c': Operator('c', 6, 2, ceil_val, 'r'),
+             'r': Operator('r', 6, 2, reroll_once_on, 'r'),
+             'R': Operator('R', 6, 2, reroll_unconditional_on, 'r'),
+             'r<': Operator('r<', 6, 2, reroll_once_lower, 'r'),
+             'R<': Operator('R<', 6, 2, reroll_unconditional_lower, 'r'),
+             'rl': Operator('rl', 6, 2, reroll_once_lower, 'r'),
+             'Rl': Operator('Rl', 6, 2, reroll_unconditional_lower, 'r'),
+             'r>': Operator('r>', 6, 2, reroll_once_higher, 'r'),
+             'R>': Operator('R>', 6, 2, reroll_unconditional_higher, 'r'),
+             'rh': Operator('rh', 6, 2, reroll_once_higher, 'r'),
+             'Rh': Operator('Rh', 6, 2, reroll_unconditional_higher, 'r'),
+             '^': Operator('^', 5, 2, lambda x, y: x ** y, 'lr'),
+             'm': Operator('m', 4, 1, lambda x: -x, 'r'),
+             'p': Operator('p', 4, 1, lambda x: x, 'r'),
+             '*': Operator('*', 3, 2, lambda x, y: x * y, 'lr'),
+             '/': Operator('/', 3, 2, lambda x, y: x / y, 'lr'),
+             '%': Operator('%', 3, 2, lambda x, y: x % y, 'lr'),
+             '-': Operator('-', 2, 2, lambda x, y: x - y, 'lr'),
+             '+': Operator('+', 2, 2, lambda x, y: x + y, 'lr'),
+             '>': Operator('>', 1, 2, lambda x, y: x > y, 'lr'),
+             'gt': Operator('gt', 1, 2, lambda x, y: x > y, 'lr'),
+             '>=': Operator('>=', 1, 2, lambda x, y: x >= y, 'lr'),
+             'ge': Operator('ge', 1, 2, lambda x, y: x >= y, 'lr'),
+             '<': Operator('<', 1, 2, lambda x, y: x < y, 'lr'),
+             'lt': Operator('lt', 1, 2, lambda x, y: x < y, 'lr'),
+             '<=': Operator('<=', 1, 2, lambda x, y: x <= y, 'lr'),
+             'le': Operator('le', 1, 2, lambda x, y: x <= y, 'lr'),
+             '=': Operator('=', 1, 2, lambda x, y: x == y, 'lr'),
+             '|': Operator('|', 1, 2, lambda x, y: x or y, 'lr'),
+             '&': Operator('&', 1, 2, lambda x, y: x and y, 'lr'),
+             }
 
 ### Tests ###
 
