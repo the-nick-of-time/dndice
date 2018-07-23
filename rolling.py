@@ -20,24 +20,24 @@ class Operator:
         self.cajole = cajole
 
     def __ge__(self, other):
-        if (isinstance(other, str)):
+        if isinstance(other, str):
             return True
         return self.precedence >= other.precedence
 
     def __le__(self, other):
-        if (isinstance(other, str)):
+        if isinstance(other, str):
             return False
         return self.precedence <= other.precedence
 
     def __lt__(self, other):
-        if (isinstance(other, str)):
+        if isinstance(other, str):
             return False
         return self.precedence < other.precedence
 
     def __eq__(self, other):
-        if (isinstance(other, Operator)):
+        if isinstance(other, Operator):
             return self.op == other.op
-        if(isinstance(other, str)):
+        if isinstance(other, str):
             return self.op == other
         return False
 
@@ -51,17 +51,17 @@ class Operator:
         operands = nums[-self.arity:]
         del nums[-self.arity:]
         # index of the left and right arguments to the operator
-        l = 0 if self.arity == 2 else None
-        r = 1 if self.arity == 2 else 0
-        if ('l' in self.cajole):
+        left = 0 if self.arity == 2 else None
+        right = 1 if self.arity == 2 else 0
+        if 'l' in self.cajole:
             try:
-                operands[l] = sum(operands[l])
-            except(TypeError):
+                operands[left] = sum(operands[left])
+            except TypeError:
                 pass
-        if ('r' in self.cajole):
+        if 'r' in self.cajole:
             try:
-                operands[r] = sum(operands[r])
-            except(TypeError):
+                operands[right] = sum(operands[right])
+            except TypeError:
                 pass
         nums.append(self.operation(*operands))
         return nums
@@ -135,6 +135,7 @@ class Roll(list):
 #         return self.value
 
 
+# noinspection PyPep8Naming
 def roll(s, modifiers=0, option='execute'):
     """Roll dice and do arithmetic."""
 
@@ -177,49 +178,47 @@ def roll(s, modifiers=0, option='execute'):
                  '&': Operator('&', 1, 2, lambda x, y: x and y, 'lr'),
                  }
 
-    if (isinstance(s, (float, int))):
+    if isinstance(s, (float, int)):
         # If you're naughty and pass a number in...
         # it really doesn't matter.
         return s + modifiers
-    elif (s == ''):
+    elif s == '':
         return 0 + modifiers
-    elif (option == 'execute'):
+    elif option == 'execute':
         return execute(tokens(s, operators), operators) + modifiers
-    elif (option == 'critical'):
+    elif option == 'critical':
         T = tokens(s, operators)
         T = critify(T, operators)
         return execute(T, operators) + modifiers
-    elif (option == 'average'):
+    elif option == 'average':
         T = tokens(s, operators)
         T = averageify(T, operators)
         return execute(T, operators) + modifiers
-    elif (option == 'multipass'):
+    elif option == 'multipass':
         import re
         pattern = '\(.*\)'
-        rep = lambda m: str(roll(m.group(0)))
-        new = re.sub(pattern, rep, s)
+        new = re.sub(pattern, lambda m: str(roll(m.group(0))), s)
         T = tokens(new, operators)
-        if (modifiers):
+        if modifiers:
             T.append(string_to_operator('+', operators))
             T.append(modifiers)
         return display_multipass(T, operators)
-    elif (option == 'multipass_critical'):
+    elif option == 'multipass_critical':
         # TODO: add modifiers into the passes
         import re
         pattern = '\(.*\)'
-        rep = lambda m: str(roll(m.group(0)))
-        new = re.sub(pattern, rep, s)
+        new = re.sub(pattern, lambda m: str(roll(m.group(0))), s)
         T = tokens(s, operators)
         T = critify(T, operators)
-        if (modifiers):
+        if modifiers:
             T.append(string_to_operator('+'))
             T.append(modifiers)
         return display_multipass(T, operators)
-    elif (option == 'tokenize'):
+    elif option == 'tokenize':
         return tokens(s)
-    elif (option == 'from_tokens'):
+    elif option == 'from_tokens':
         return execute(s)
-    elif (option == 'zero'):
+    elif option == 'zero':
         return 0
 
 
@@ -232,34 +231,34 @@ def tokens(s, operators):
     possibilities = ''.join([str(item) for item in operators])
     curr_num = []
     curr_op = []
-    T = []
+    tokenlist = []
     i = 0
-    while (i < len(s)):
+    while i < len(s):
         char = s[i]
-        if (char in string.digits):
-            if (curr_op):
+        if char in string.digits:
+            if curr_op:
                 op = string_to_operator(''.join(curr_op), operators)
-                T.append(op)
+                tokenlist.append(op)
                 curr_op = []
             curr_num.append(char)
-        elif (char in possibilities or char in '()'):
+        elif char in possibilities or char in '()':
             # Things that will end up on the operators stack
             # elif (char in operators or char == '(' or char == ')'):
-            if (curr_num):
-                T.append(int(''.join(curr_num)))
+            if curr_num:
+                tokenlist.append(int(''.join(curr_num)))
                 curr_num = []
-            if(char == '+' and (i == 0 or s[i - 1] in possibilities + '(')):
-                T.append(string_to_operator('p', operators))
+            if char == '+' and (i == 0 or s[i - 1] in possibilities + '('):
+                tokenlist.append(string_to_operator('p', operators))
                 curr_op = []
-            elif(char == '-' and (i == 0 or s[i - 1] in possibilities + '(')):
-                T.append(string_to_operator('m', operators))
+            elif char == '-' and (i == 0 or s[i - 1] in possibilities + '('):
+                tokenlist.append(string_to_operator('m', operators))
                 curr_op = []
             else:
-                if (len(curr_op) == 0):
+                if len(curr_op) == 0:
                     # This is the first time you see an operator since last
                     # time the list was cleared
                     curr_op.append(char)
-                elif (''.join(curr_op + [char]) in operators):
+                elif ''.join(curr_op + [char]) in operators:
                     # This means that the current char is part of a
                     # multicharacter operation like <=
                     curr_op.append(char)
@@ -267,61 +266,61 @@ def tokens(s, operators):
                     # Two separate operators; push out the old one and start
                     # collecting the new one
                     op = string_to_operator(''.join(curr_op), operators)
-                    T.append(op)
+                    tokenlist.append(op)
                     curr_op = [char]
-        elif (char == '['):
-            if (curr_op):
-                T.append(string_to_operator(''.join(curr_op), operators))
+        elif char == '[':
+            if curr_op:
+                tokenlist.append(string_to_operator(''.join(curr_op), operators))
                 curr_op = []
             # Start a list of floats
             sidelist = []
-            while (s[i] != ']'):
+            while s[i] != ']':
                 sidelist.append(s[i])
                 i += 1
             sidelist.append(s[i])
-            T.append(read_list(''.join(sidelist)))
-        elif (char == 'F'):
-            if (curr_op):
-                T.append(string_to_operator(''.join(curr_op), operators))
+            tokenlist.append(read_list(''.join(sidelist)))
+        elif char == 'F':
+            if curr_op:
+                tokenlist.append(string_to_operator(''.join(curr_op), operators))
                 curr_op = []
             # Fudge die
-            T.append([-1, 0, 1])
+            tokenlist.append([-1, 0, 1])
         i += 1
-    if (curr_num):
-        T.append(int(''.join(curr_num)))
-    elif (curr_op):
-        T.append(''.join(curr_op))
-    return T
+    if curr_num:
+        tokenlist.append(int(''.join(curr_num)))
+    elif curr_op:
+        tokenlist.append(''.join(curr_op))
+    return tokenlist
 
 
 def execute(T, operators):
     oper = []
     # nums = [Result()]
     nums = []
-    while (len(T) > 0):
+    while len(T) > 0:
         current = T.pop(0)
-        if (isinstance(current, (int, list))):
+        if isinstance(current, (int, list)):
             nums.append(current)
-        elif (current == '('):
+        elif current == '(':
             oper.append(current)
-        elif (current == ')'):
-            while (oper[-1] != '('):
+        elif current == ')':
+            while oper[-1] != '(':
                 # Evaluate all extant expressions down to the open paren
                 oper[-1](nums)
                 oper.pop()
             oper.pop()  # Get rid of that last open paren
-        elif (current in operators):
+        elif current in operators:
             try:
                 # Evaluate all higher-precedence operations first
-                while (oper[-1] >= current):
+                while oper[-1] >= current:
                     oper[-1](nums)
                     oper.pop()
-            except (IndexError):
+            except IndexError:
                 # Operators stack is empty
                 pass
             # Then push the current operator to the stack
             oper.append(current)
-    while (len(oper) > 0):
+    while len(oper) > 0:
         # Empty the operators stack
         oper[-1](nums)
         oper.pop()
@@ -333,7 +332,7 @@ def deep_sum(l, starting=0):
     for item in l:
         try:
             s += item
-        except (TypeError):
+        except TypeError:
             s += deep_sum(item)
     return s
 
@@ -347,9 +346,9 @@ def string_to_operator(s, operators):
 
 def read_list(s, mode='float'):
     """Read a list defined in a string."""
-    if (mode == 'float'):
+    if mode == 'float':
         return list(eval(s))
-    elif (mode == 'int'):
+    elif mode == 'int':
         a = list(eval(s))
         return [int(item) for item in a]
 
@@ -358,21 +357,23 @@ def critify(T, operators):
     # Note: crit is superseded by maximum
     # Though why you're using roll_max anyway is a mystery
     for (i, item) in enumerate(T):
-        if (item == 'd' or item == 'da'):
+        if item == 'd' or item == 'da':
             T[i] = string_to_operator('dc', operators)
     return T
+
 
 def averageify(T, operators):
     # Note: average is superseded by crit or max
     for (i, item) in enumerate(T):
-        if (item == 'd'):
+        if item == 'd':
             T[i] = string_to_operator('da', operators)
     return T
+
 
 def maxify(T, operators):
     # Max supersedes all
     for (i, item) in enumerate(T):
-        if (item == 'd' or item == 'da' or item == 'dc'):
+        if item == 'd' or item == 'da' or item == 'dc':
             T[i] = string_to_operator('dm', operators)
     return T
 
@@ -381,7 +382,7 @@ def maxify(T, operators):
 
 
 def take_low(roll, number):
-    if (len(roll) > number):
+    if len(roll) > number:
         n = len(roll) - number
         roll.discards.extend(roll[-n:])
         del roll[-n:]
@@ -389,7 +390,7 @@ def take_low(roll, number):
 
 
 def take_high(roll, number):
-    if (len(roll) > number):
+    if len(roll) > number:
         n = len(roll) - number
         roll.discards.extend(roll[:n])
         del roll[:n]
@@ -411,9 +412,9 @@ def roll_basic(number, sides):
 
 def single_die(sides):
     """Roll a single die."""
-    if (type(sides) is int):
+    if type(sides) is int:
         return random.randint(1, sides)
-    elif (type(sides) is list):
+    elif type(sides) is list:
         return sides[random.randint(0, len(sides) - 1)]
 
 
@@ -424,7 +425,7 @@ def roll_critical(number, sides):
     result.die = sides
     # result.discards = [[] for all in range(number)]
     rollList = []
-    for all in range(2*number):
+    for all in range(2 * number):
         result.append(single_die(sides))
     result.sort()
     return result
@@ -437,7 +438,7 @@ def roll_max(number, sides):
     result.die = sides
     # result.discards = [[] for all in range(number)]
     rollList = []
-    if (isinstance(sides, list)):
+    if isinstance(sides, list):
         result.extend([max(sides) for all in range(number)])
     else:
         result.extend([sides for all in range(number)])
@@ -448,11 +449,11 @@ def roll_average(number, sides):
     val = Roll()
     val.die = sides
     # val.discards = [[] for all in range(number)]
-    if (isinstance(sides, list)):
-        val.extend([sum(sides)/len(sides)]*number)
+    if isinstance(sides, list):
+        val.extend([sum(sides) / len(sides)] * number)
         # return (sum(sides) * number) / len(sides)
     else:
-        val.extend([(sides+1)/2]*number)
+        val.extend([(sides + 1) / 2] * number)
         # return (1 + sides) * number / 2
     return val
 
@@ -461,7 +462,7 @@ def reroll_once(original, target, comp):
     modified = original
     i = 0
     while i < len(original):
-        if (comp(modified[i], target)):
+        if comp(modified[i], target):
             modified.discards.append(modified[i])
             modified[i] = single_die(modified.die)
         i += 1
@@ -473,7 +474,7 @@ def reroll_unconditional(original, target, comp):
     modified = original
     i = 0
     while i < len(original):
-        while (comp(modified[i], target)):
+        while comp(modified[i], target):
             modified.discards.append(modified[i])
             modified[i] = single_die(modified.die)
         i += 1
@@ -509,7 +510,7 @@ def floor_val(original, bottom):
     modified = original
     i = 0
     while i < len(original):
-        if (modified[i] < bottom):
+        if modified[i] < bottom:
             modified.discards[i].append(modified[i])
             modified[i] = bottom
         i += 1
@@ -521,7 +522,7 @@ def ceil_val(original, top):
     modified = original
     i = 0
     while i < len(original):
-        if (modified[i] > top):
+        if modified[i] > top:
             modified.discards[i].append(modified[i])
             modified[i] = top
         i += 1
@@ -536,22 +537,22 @@ def multipass(T, operators):
     working = T.copy()
     pmax = max(operators.values()).precedence
     pmin = min(operators.values()).precedence
-    for p in range(pmax, pmin-1, -1):
+    for p in range(pmax, pmin - 1, -1):
         i = 0
-        while (i < len(working)):
-            if (isinstance(working[i], Operator) and working[i].precedence == p):
+        while i < len(working):
+            if isinstance(working[i], Operator) and working[i].precedence == p:
                 # Take the operator and adjacent numbers according to the arity
-                if (working[i].arity == 1):
+                if working[i].arity == 1:
                     # perform the operation
                     # push back into the correct location within the token list
-                    working[i] = working[i]([working.pop(i+1)])
-                elif (working[i].arity == 2):
+                    working[i] = working[i]([working.pop(i + 1)])
+                elif working[i].arity == 2:
                     # perform the operation
                     # push back into the correct location within the token list
                     op = working[i]
-                    nums = [working.pop(i-1), working.pop(i)]
+                    nums = [working.pop(i - 1), working.pop(i)]
                     r = op(nums)
-                    working[i-1] = r[0]
+                    working[i - 1] = r[0]
                     i -= 1
             i += 1
         out.append(working.copy())
@@ -574,18 +575,18 @@ class MultipassResult:
         return self.passes[-1]
 
     def __eq__(self, other):
-        if (isinstance(other, int)):
+        if isinstance(other, int):
             return self.final == other
         else:
             return self is other
 
     def __add__(self, other):
-        if (isinstance(other, MultipassResult)):
+        if isinstance(other, MultipassResult):
             self.postrolls.append(string_to_operator('+', self.ops))
             self.postrolls.extend(other.postrolls)
             self.final += other.final
             return self
-        elif (isinstance(other, int)):
+        elif isinstance(other, int):
             self.postrolls.append(string_to_operator('+', self.ops))
             self.postrolls.append(other)
             self.final += other
