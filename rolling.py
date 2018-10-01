@@ -420,7 +420,7 @@ def floor_val(original, bottom):
     i = 0
     while i < len(original):
         if modified[i] < bottom:
-            modified.discards[i].append(modified[i])
+            modified.discards.append(modified[i])
             modified[i] = bottom
         i += 1
     modified.sort()
@@ -432,7 +432,7 @@ def ceil_val(original, top):
     i = 0
     while i < len(original):
         if modified[i] > top:
-            modified.discards[i].append(modified[i])
+            modified.discards.append(modified[i])
             modified[i] = top
         i += 1
     modified.sort()
