@@ -2,21 +2,22 @@ import random
 
 
 class Arity:
-    LEFT = 0b01
-    RIGHT = 0b10
+    RIGHT = 0b01
+    LEFT = 0b10
     BOTH = 0b11
     NEITHER = 0b00
 
 
 class Operator:
     def __init__(self, code: str, precedence: int, func: callable, arity: int = Arity.BOTH,
-                 associativity: int = Arity.LEFT, cajole: int = Arity.BOTH):
+                 associativity: int = Arity.LEFT, cajole: int = Arity.BOTH, viewAs: str = None):
         self.code = code
         self.precedence = precedence
         self.function = func
         self.arity = arity
         self.associativity = associativity
         self.cajole = cajole
+        self.viewAs = viewAs
 
     def __ge__(self, other):
         if isinstance(other, str):
@@ -61,7 +62,7 @@ class Operator:
         return '{}:{} {}'.format(self.code, self.arity, self.precedence)
 
     def __str__(self):
-        return self.code
+        return self.viewAs or self.code
 
     def __call__(self, left, right):
         if self.cajole & Arity.LEFT:
@@ -255,6 +256,7 @@ def factorial(number):
 
 
 operators = {
+    '!': Operator('!', 8, factorial, arity=Arity.LEFT, cajole=Arity.LEFT),
     'd': Operator('d', 7, roll_basic, cajole=Arity.LEFT),
     'da': Operator('da', 7, roll_average, cajole=Arity.LEFT),
     'dc': Operator('dc', 7, roll_critical, cajole=Arity.LEFT),
@@ -278,7 +280,6 @@ operators = {
     '^': Operator('^', 5, lambda x, y: x ** y, associativity=Arity.RIGHT),
     'm': Operator('m', 4, lambda x: -x, arity=Arity.RIGHT, cajole=Arity.RIGHT),
     'p': Operator('p', 4, lambda x: x, arity=Arity.RIGHT, cajole=Arity.RIGHT),
-    '!': Operator('!', 3, factorial, arity=Arity.LEFT, cajole=Arity.LEFT),
     '*': Operator('*', 3, lambda x, y: x * y),
     '/': Operator('/', 3, lambda x, y: x / y),
     '%': Operator('%', 3, lambda x, y: x % y),
