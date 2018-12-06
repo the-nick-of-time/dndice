@@ -107,7 +107,10 @@ class EvalTree:
         self.from_tokens(tokens(string))
 
     def evaluate(self):
-        return self.root.evaluate()
+        try:
+            return sum(self.root.evaluate())
+        except TypeError:
+            return self.root.evaluate()
 
     def from_tokens(self, tokens):
         expression: typing.List[EvalTreeNode] = []
