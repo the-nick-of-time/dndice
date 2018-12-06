@@ -146,6 +146,83 @@ class EvalTree:
             node.left = values.pop()
         values.append(node)
 
+    def verbose_result(self):
+        self.evaluate()
+        base = self.__verbose_result_recursive(self.root, 6)
+        return base + ' = ' + str(self.root.value)
+
+    def __verbose_result_recursive(self, current: EvalTreeNode, threshold: int) -> str:
+        if current is None:
+            return ''
+        if current.is_leaf() or current.payload.precedence >= threshold:
+            return str(current.value)
+        return (self.__verbose_result_recursive(current.left, threshold)
+                + str(current.payload)
+                + self.__verbose_result_recursive(current.right, threshold))
+
+    def pre_order(self):
+        return self.__pre_order_recursive(self.root)
+
+    def __pre_order_recursive(self, current: EvalTreeNode) -> typing.Generator[EvalTreeNode, None, None]:
+        yield current
+        if current.left:
+            yield self.__pre_order_recursive(current.left)
+        if current.right:
+            yield self.__pre_order_recursive(current.right)
+
+    def critify(self):
+        # Note: crit is superseded by maximum
+        # Though why you're using roll_max anyway is a mystery
+        for node in self.pre_order():
+            if node.payload == 'd' or node.payload == 'da':
+                node.payload = operators['dc']
+        return self
+
+    def averageify(self):
+        # Note: average is superseded by crit or max
+        for node in self.pre_order():
+            if node.payload == 'd':
+                node.payload = operators['da']
+        return self
+
+    def maxify(self):
+        # Max supersedes all
+        for node in self.pre_order():
+            if node.payload == 'd' or node.payload == 'da' or node.payload == 'dc':
+                node.payload = operators['dm']
+        return self
+
+
+def roll(s: str, modifiers=0, option='execute'):
+    """Roll dice and do arithmetic."""
+    if isinstance(s, (float, int)):
+        # If you're naughty and pass a number in...
+        # it really doesn't matter.
+        return s + modifiers
+    elif s == '':
+        return 0 + modifiers
+    elif option == 'execute':
+        return EvalTree(s).evaluate() + modifiers
+    elif option == 'critical':
+        return EvalTree(s).critify().evaluate() + modifiers
+    elif option == 'average':
+        return EvalTree(s).averageify().evaluate() + modifiers
+    elif option == 'multipass':
+        tree = EvalTree(s)
+        return tree.verbose_result()
+    elif option == 'multipass_critical':
+        tree = EvalTree(s)
+        tree.critify()
+        return tree.verbose_result()
+    elif option == 'tokenize':
+        return tokens(s)
+    elif option == 'from_tokens':
+        tree = EvalTree('')
+        tree.from_tokens(s)
+        return tree.evaluate()
+    elif option == 'zero':
+        return 0
+
 
 if __name__ == '__main__':
     testCases = ["1d4+1",
@@ -187,4 +264,11 @@ if __name__ == '__main__':
                  ]
     for expr in testCases:
         tree = EvalTree(expr)
-        print(expr, ' = ', tree.evaluate())
+        print('EVALUATING ' + expr)
+        print('EVALUATING USING TREE DIRECTLY')
+        print(tree.evaluate())
+        print('EVALUATING USING ROLL FUNCTION')
+        print(roll(expr))
+        print('EVALUATING USING ROLL FUNCTION IN MULTIPASS MODE')
+        print(roll(expr, option='multipass'))
+        print()
