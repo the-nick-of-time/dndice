@@ -105,6 +105,12 @@ class Roll(list):
     def __repr__(self):
         return self.__str__()
 
+    def copy(self) -> 'Roll':
+        rv = Roll(self[:])
+        rv.die = self.die
+        rv.discards = self.discards[:]
+        return rv
+
 
 def threshold_lower(roll: Roll, threshold: int) -> Roll:
     """Count the number of rolls that are equal to or above the given threshold.
@@ -221,7 +227,7 @@ def reroll_once(original: Roll, target: Number, comp: typing.Callable[[Number, N
     :param comp: The comparison function, that should return true if the value should be rerolled.
     :return: The roll after performing the rerolls.
     """
-    modified = original
+    modified = original.copy()
     i = 0
     while i < len(original):
         if comp(modified[i], target):
@@ -240,7 +246,7 @@ def reroll_unconditional(original: Roll, target: Number, comp: typing.Callable[[
     :param comp: The comparison function, that should return true if the value should be rerolled.
     :return: The roll after performing the rerolls.
     """
-    modified = original
+    modified = original.copy()
     i = 0
     while i < len(original):
         while comp(modified[i], target):
@@ -288,7 +294,7 @@ def floor_val(original: Roll, bottom: Number) -> Roll:
     :param bottom: The floor to truncate to.
     :return: The modified roll set.
     """
-    modified = original
+    modified = original.copy()
     i = 0
     while i < len(original):
         if modified[i] < bottom:
@@ -306,7 +312,7 @@ def ceil_val(original: Roll, top: Number) -> Roll:
     :param top: The ceiling to truncate to.
     :return: The modified roll set.
     """
-    modified = original
+    modified = original.copy()
     i = 0
     while i < len(original):
         if modified[i] > top:
