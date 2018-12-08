@@ -1,7 +1,16 @@
 import random
+import typing
+
+Number = typing.Union[int, float]
 
 
-class Arity:
+class Side:
+    """Represents which side an operation is applicable to.
+
+    Note that checking if an operation includes one side is as simple as checking
+    `Operator.arity & Side.LEFT` or `Operator.arity & Side.RIGHT`,
+    whichever one you want
+    """
     RIGHT = 0b01
     LEFT = 0b10
     BOTH = 0b11
@@ -9,8 +18,10 @@ class Arity:
 
 
 class Operator:
-    def __init__(self, code: str, precedence: int, func: callable, arity: int = Arity.BOTH,
-                 associativity: int = Arity.LEFT, cajole: int = Arity.BOTH, viewAs: str = None):
+    """An operator like + or d that can be applied to values."""
+
+    def __init__(self, code: str, precedence: int, func: callable, arity: int = Side.BOTH,
+                 associativity: int = Side.LEFT, cajole: int = Side.BOTH, viewAs: str = None):
         self.code = code
         self.precedence = precedence
         self.function = func
@@ -45,7 +56,7 @@ class Operator:
 
     def __lt__(self, other):
         if isinstance(other, str):
-            return False
+            return True
         elif isinstance(other, Operator):
             return self.precedence < other.precedence
         else:
@@ -65,12 +76,12 @@ class Operator:
         return self.viewAs or self.code
 
     def __call__(self, left, right):
-        if self.cajole & Arity.LEFT:
+        if self.cajole & Side.LEFT:
             try:
                 left = sum(left)
             except TypeError:
                 pass
-        if self.cajole & Arity.RIGHT:
+        if self.cajole & Side.RIGHT:
             try:
                 right = sum(right)
             except TypeError:
@@ -79,6 +90,7 @@ class Operator:
 
 
 class Roll(list):
+    """A set of rolls."""
     def __init__(self, *args, **kwargs):
         list.__init__(self, *args, **kwargs)
         self.die = 0
@@ -94,15 +106,39 @@ class Roll(list):
         return self.__str__()
 
 
-def threshold_lower(left: Roll, right: int):
-    return [1 if v > right else 0 for v in left]
+def threshold_lower(roll: Roll, threshold: int) -> Roll:
+    """Count the number of rolls that are equal to or above the given threshold.
+
+    :param roll: The set of rolls.
+    :param threshold: The number to compare against.
+    :return: A list of ones and zeros that indicate which rolls met the threshold.
+    """
+    modified = Roll([1 if v >= threshold else 0 for v in roll])
+    modified.die = roll.die
+    modified.discards = roll.discards[:]
+    return modified
 
 
-def threshold_upper(left: Roll, right: int):
-    return [1 if v < right else 0 for v in left]
+def threshold_upper(roll: Roll, threshold: int) -> Roll:
+    """Count the number of rolls that are equal to or below the given threshold.
+
+    :param roll: The set of rolls.
+    :param threshold: The number to compare against.
+    :return: A list of ones and zeros that indicate which rolls met the threshold.
+    """
+    modified = Roll([1 if v <= threshold else 0 for v in roll])
+    modified.die = roll.die
+    modified.discards = roll.discards[:]
+    return modified
 
 
-def take_low(roll, number):
+def take_low(roll: Roll, number: int) -> Roll:
+    """Preserve the lowest [number] rolls and discard the rest. Used to implement disadvantage in D&D 5e.
+
+    :param roll: The set of rolls.
+    :param number: The number of rolls to take.
+    :return: A roll with the lowest rolls preserved and the rest discarded.
+    """
     if len(roll) > number:
         n = len(roll) - number
         roll.discards.extend(roll[-n:])
@@ -110,7 +146,13 @@ def take_low(roll, number):
     return roll
 
 
-def take_high(roll, number):
+def take_high(roll: Roll, number: int) -> Roll:
+    """Preserve the highest [number] rolls and discard the rest. Used to implement advantage in D&D 5e.
+
+    :param roll: The set of rolls.
+    :param number: The number of rolls to take.
+    :return: A roll with the highest rolls preserved and the rest discarded.
+    """
     if len(roll) > number:
         n = len(roll) - number
         roll.discards.extend(roll[:n])
@@ -118,39 +160,37 @@ def take_high(roll, number):
     return roll
 
 
-def roll_basic(number, sides):
+def roll_basic(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
     """Roll a single set of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
     result = Roll()
     result.die = sides
-    # result.discards = [[] for all in range(number)]
     for all in range(number):
         result.append(single_die(sides))
     result.sort()
     return result
 
 
-def single_die(sides):
+def single_die(sides: typing.Union[int, typing.List[float]]) -> typing.Union[int, float]:
     """Roll a single die."""
     if type(sides) is int:
         return random.randint(1, sides)
     elif type(sides) is list:
-        return sides[random.randint(0, len(sides) - 1)]
+        return random.choice(sides)
 
 
-def roll_critical(number, sides):
+def roll_critical(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
     """Roll double the normal number of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
     result = Roll()
     result.die = sides
-    # result.discards = [[] for all in range(number)]
     for all in range(2 * number):
         result.append(single_die(sides))
     result.sort()
     return result
 
 
-def roll_max(number, sides):
+def roll_max(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
     """Roll double the normal number of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
     result = Roll()
@@ -163,20 +203,24 @@ def roll_max(number, sides):
     return result
 
 
-def roll_average(number, sides):
+def roll_average(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
     val = Roll()
     val.die = sides
-    # val.discards = [[] for all in range(number)]
     if isinstance(sides, list):
         val.extend([sum(sides) / len(sides)] * number)
-        # return (sum(sides) * number) / len(sides)
     else:
         val.extend([(sides + 1) / 2] * number)
-        # return (1 + sides) * number / 2
     return val
 
 
-def reroll_once(original, target, comp):
+def reroll_once(original: Roll, target: Number, comp: typing.Callable[[Number, Number], bool]) -> Roll:
+    """Take the roll and reroll values that meet the comparison, taking the new result.
+
+    :param original: The set of rolls to inspect.
+    :param target: The target to compare against.
+    :param comp: The comparison function, that should return true if the value should be rerolled.
+    :return: The roll after performing the rerolls.
+    """
     modified = original
     i = 0
     while i < len(original):
@@ -188,7 +232,14 @@ def reroll_once(original, target, comp):
     return modified
 
 
-def reroll_unconditional(original, target, comp):
+def reroll_unconditional(original: Roll, target: Number, comp: typing.Callable[[Number, Number], bool]):
+    """Take the roll and reroll values that meet the comparison, and keep on rerolling until they don't.
+
+    :param original: The set of rolls to inspect.
+    :param target: The target to compare against.
+    :param comp: The comparison function, that should return true if the value should be rerolled.
+    :return: The roll after performing the rerolls.
+    """
     modified = original
     i = 0
     while i < len(original):
@@ -200,31 +251,43 @@ def reroll_unconditional(original, target, comp):
     return modified
 
 
-def reroll_once_on(original, target):
+def reroll_once_on(original: Roll, target: Number) -> Roll:
+    """Reroll and take the new result when a roll is equal to the given number."""
     return reroll_once(original, target, lambda x, y: x == y)
 
 
-def reroll_once_higher(original, target):
+def reroll_once_higher(original: Roll, target: Number) -> Roll:
+    """Reroll and take the new result when a roll is greater than the given number."""
     return reroll_once(original, target, lambda x, y: x > y)
 
 
-def reroll_once_lower(original, target):
+def reroll_once_lower(original: Roll, target: Number) -> Roll:
+    """Reroll and take the new result when a roll is less than the given number."""
     return reroll_once(original, target, lambda x, y: x < y)
 
 
-def reroll_unconditional_on(original, target):
+def reroll_unconditional_on(original: Roll, target: Number) -> Roll:
+    """Reroll and keep on rerolling when a roll is equal to the given number."""
     return reroll_unconditional(original, target, lambda x, y: x == y)
 
 
-def reroll_unconditional_higher(original, target):
+def reroll_unconditional_higher(original: Roll, target: Number) -> Roll:
+    """Reroll and keep on rerolling when a roll is greater than the given number."""
     return reroll_unconditional(original, target, lambda x, y: x > y)
 
 
-def reroll_unconditional_lower(original, target):
+def reroll_unconditional_lower(original: Roll, target: Number) -> Roll:
+    """Reroll and keep on rerolling when a roll is less than the given number."""
     return reroll_unconditional(original, target, lambda x, y: x < y)
 
 
-def floor_val(original, bottom):
+def floor_val(original: Roll, bottom: Number) -> Roll:
+    """Replace any rolls less than the given floor with that floor value.
+
+    :param original: The set of rolls.
+    :param bottom: The floor to truncate to.
+    :return: The modified roll set.
+    """
     modified = original
     i = 0
     while i < len(original):
@@ -236,7 +299,13 @@ def floor_val(original, bottom):
     return modified
 
 
-def ceil_val(original, top):
+def ceil_val(original: Roll, top: Number) -> Roll:
+    """Replace any rolls greater than the given ceiling with that ceiling value.
+
+    :param original: The set of rolls.
+    :param top: The ceiling to truncate to.
+    :return: The modified roll set.
+    """
     modified = original
     i = 0
     while i < len(original):
@@ -248,7 +317,12 @@ def ceil_val(original, top):
     return modified
 
 
-def factorial(number):
+def factorial(number: Number) -> Number:
+    """Calculate the factorial of a number.
+
+    :param number: The argument.
+    :return: number!
+    """
     rv = 1
     for i in range(number):
         rv *= i + 1
@@ -256,30 +330,30 @@ def factorial(number):
 
 
 operators = {
-    '!': Operator('!', 8, factorial, arity=Arity.LEFT, cajole=Arity.LEFT),
-    'd': Operator('d', 7, roll_basic, cajole=Arity.LEFT),
-    'da': Operator('da', 7, roll_average, cajole=Arity.LEFT),
-    'dc': Operator('dc', 7, roll_critical, cajole=Arity.LEFT),
-    'dm': Operator('dm', 7, roll_max, cajole=Arity.LEFT),
-    'h': Operator('h', 6, take_high, cajole=Arity.RIGHT),
-    'l': Operator('l', 6, take_low, cajole=Arity.RIGHT),
-    'f': Operator('f', 6, floor_val, cajole=Arity.RIGHT),
-    'c': Operator('c', 6, ceil_val, cajole=Arity.RIGHT),
-    'r': Operator('r', 6, reroll_once_on, cajole=Arity.RIGHT),
-    'R': Operator('R', 6, reroll_unconditional_on, cajole=Arity.RIGHT),
-    'r<': Operator('r<', 6, reroll_once_lower, cajole=Arity.RIGHT),
-    'R<': Operator('R<', 6, reroll_unconditional_lower, cajole=Arity.RIGHT),
-    'rl': Operator('rl', 6, reroll_once_lower, cajole=Arity.RIGHT),
-    'Rl': Operator('Rl', 6, reroll_unconditional_lower, cajole=Arity.RIGHT),
-    'r>': Operator('r>', 6, reroll_once_higher, cajole=Arity.RIGHT),
-    'R>': Operator('R>', 6, reroll_unconditional_higher, cajole=Arity.RIGHT),
-    'rh': Operator('rh', 6, reroll_once_higher, cajole=Arity.RIGHT),
-    'Rh': Operator('Rh', 6, reroll_unconditional_higher, cajole=Arity.RIGHT),
-    't': Operator('t', 6, threshold_lower, cajole=Arity.RIGHT),
-    'T': Operator('T', 6, threshold_upper, cajole=Arity.RIGHT),
-    '^': Operator('^', 5, lambda x, y: x ** y, associativity=Arity.RIGHT),
-    'm': Operator('m', 4, lambda x: -x, arity=Arity.RIGHT, cajole=Arity.RIGHT),
-    'p': Operator('p', 4, lambda x: x, arity=Arity.RIGHT, cajole=Arity.RIGHT),
+    '!': Operator('!', 8, factorial, arity=Side.LEFT, cajole=Side.LEFT),
+    'd': Operator('d', 7, roll_basic, cajole=Side.LEFT),
+    'da': Operator('da', 7, roll_average, cajole=Side.LEFT),
+    'dc': Operator('dc', 7, roll_critical, cajole=Side.LEFT),
+    'dm': Operator('dm', 7, roll_max, cajole=Side.LEFT),
+    'h': Operator('h', 6, take_high, cajole=Side.RIGHT),
+    'l': Operator('l', 6, take_low, cajole=Side.RIGHT),
+    'f': Operator('f', 6, floor_val, cajole=Side.RIGHT),
+    'c': Operator('c', 6, ceil_val, cajole=Side.RIGHT),
+    'r': Operator('r', 6, reroll_once_on, cajole=Side.RIGHT),
+    'R': Operator('R', 6, reroll_unconditional_on, cajole=Side.RIGHT),
+    'r<': Operator('r<', 6, reroll_once_lower, cajole=Side.RIGHT),
+    'R<': Operator('R<', 6, reroll_unconditional_lower, cajole=Side.RIGHT),
+    'rl': Operator('rl', 6, reroll_once_lower, cajole=Side.RIGHT),
+    'Rl': Operator('Rl', 6, reroll_unconditional_lower, cajole=Side.RIGHT),
+    'r>': Operator('r>', 6, reroll_once_higher, cajole=Side.RIGHT),
+    'R>': Operator('R>', 6, reroll_unconditional_higher, cajole=Side.RIGHT),
+    'rh': Operator('rh', 6, reroll_once_higher, cajole=Side.RIGHT),
+    'Rh': Operator('Rh', 6, reroll_unconditional_higher, cajole=Side.RIGHT),
+    't': Operator('t', 6, threshold_lower, cajole=Side.RIGHT),
+    'T': Operator('T', 6, threshold_upper, cajole=Side.RIGHT),
+    '^': Operator('^', 5, lambda x, y: x ** y, associativity=Side.RIGHT),
+    'm': Operator('m', 4, lambda x: -x, arity=Side.RIGHT, cajole=Side.RIGHT),
+    'p': Operator('p', 4, lambda x: x, arity=Side.RIGHT, cajole=Side.RIGHT),
     '*': Operator('*', 3, lambda x, y: x * y),
     '/': Operator('/', 3, lambda x, y: x / y),
     '%': Operator('%', 3, lambda x, y: x % y),
