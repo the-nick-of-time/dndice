@@ -39,7 +39,7 @@ def _string_to_operator(s: str) -> typing.Union[str, Operator]:
 
 def _read_list(s: str, mode=float) -> typing.Iterable[float]:
     """Read a list defined in a string."""
-    return map(mode, s.split(','))
+    return list(map(mode, map(str.strip, s.split(','))))
 
 
 def tokens(s: str) -> typing.List[Token]:
@@ -94,10 +94,10 @@ def tokens(s: str) -> typing.List[Token]:
                 curr_op = []
             # Start a list of floats
             sidelist = []
+            i += 1
             while s[i] != ']':
                 sidelist.append(s[i])
                 i += 1
-            sidelist.append(s[i])
             tokenlist.append(_read_list(''.join(sidelist)))
         elif char == 'F':
             if curr_op:
@@ -184,7 +184,11 @@ class EvalTree:
         if self.root.value is None:
             self.evaluate()
         base = self.__verbose_result_recursive(self.root, 6)
-        return base + ' = ' + str(self.root.value)
+        try:
+            final = sum(self.root.value)
+        except TypeError:
+            final = self.root.value
+        return base + ' = ' + str(final)
 
     def __verbose_result_recursive(self, current: EvalTreeNode, threshold: int) -> str:
         """Perform an in-order traversal to build the string of the result."""
@@ -309,6 +313,8 @@ if __name__ == '__main__':
                  "1d8>=6",
                  "10d8r>4",
                  "10d8R>4",
+                 "10d[3,3,3,5]",
+                 "10d[3, 3, 3, 5]",
                  ]
     for expr in testCases:
         tree = EvalTree(expr)
