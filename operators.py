@@ -121,7 +121,7 @@ def threshold_lower(roll: Roll, threshold: int) -> Roll:
     """
     modified = Roll([1 if v >= threshold else 0 for v in roll])
     modified.die = roll.die
-    modified.discards = roll.discards[:]
+    modified.discards = roll.discards[:] + roll[:]
     return modified
 
 
@@ -134,7 +134,7 @@ def threshold_upper(roll: Roll, threshold: int) -> Roll:
     """
     modified = Roll([1 if v <= threshold else 0 for v in roll])
     modified.die = roll.die
-    modified.discards = roll.discards[:]
+    modified.discards = roll.discards[:] + roll[:]
     return modified
 
 

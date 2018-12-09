@@ -315,6 +315,8 @@ if __name__ == '__main__':
                  "10d8R>4",
                  "10d[3,3,3,5]",
                  "10d[3, 3, 3, 5]",
+                 "15d6t5",
+                 "15d6T1",
                  ]
     for expr in testCases:
         tree = EvalTree(expr)
