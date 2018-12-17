@@ -245,32 +245,33 @@ class EvalTree:
         return self
 
 
-def roll(s: str, modifiers=0, option='execute'):
+def roll(expr: typing.Union[str, typing.List[Token]], modifiers=0, option='execute') -> \
+        typing.Union[int, float, str, typing.List[Token]]:
     """Roll dice and do arithmetic."""
-    if isinstance(s, (float, int)):
+    if isinstance(expr, (float, int)):
         # If you're naughty and pass a number in...
         # it really doesn't matter.
-        return s + modifiers
-    elif s == '':
+        return expr + modifiers
+    elif expr == '':
         return 0 + modifiers
     elif option == 'execute':
-        return EvalTree(s).evaluate() + modifiers
+        return EvalTree(expr).evaluate() + modifiers
     elif option == 'critical':
-        return EvalTree(s).critify().evaluate() + modifiers
+        return EvalTree(expr).critify().evaluate() + modifiers
     elif option == 'average':
-        return EvalTree(s).averageify().evaluate() + modifiers
+        return EvalTree(expr).averageify().evaluate() + modifiers
     elif option == 'multipass':
-        tree = EvalTree(s)
+        tree = EvalTree("{}+{}".format(expr, modifiers))
         return tree.verbose_result()
     elif option == 'multipass_critical':
-        tree = EvalTree(s)
+        tree = EvalTree("{}+{}".format(expr, modifiers))
         tree.critify()
         return tree.verbose_result()
     elif option == 'tokenize':
-        return tokens(s)
+        return tokens(expr)
     elif option == 'from_tokens':
         tree = EvalTree('')
-        tree.from_tokens(s)
+        tree.from_tokens(expr + [operators['+'], modifiers])
         return tree.evaluate()
     elif option == 'zero':
         return 0
@@ -327,4 +328,8 @@ if __name__ == '__main__':
         print(roll(expr))
         print('EVALUATING USING ROLL FUNCTION IN MULTIPASS MODE')
         print(roll(expr, option='multipass'))
+        print('EVALUATING USING ROLL FUNCTION AND MODIFIER')
+        print(roll(expr, 3))
+        print('EVALUATING USING ROLL FUNCTION IN MULTIPASS MODE AND MODIFIER')
+        print(roll(expr, 3, option='multipass'))
         print()
