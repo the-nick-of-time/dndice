@@ -1,10 +1,11 @@
+import enum
 import random
 import typing
 
 Number = typing.Union[int, float]
 
 
-class Side:
+class Side(enum.Flag):
     """Represents which side an operation is applicable to.
 
     Note that checking if an operation includes one side is as simple as checking
@@ -20,8 +21,8 @@ class Side:
 class Operator:
     """An operator like + or d that can be applied to values."""
 
-    def __init__(self, code: str, precedence: int, func: callable, arity: int = Side.BOTH,
-                 associativity: int = Side.LEFT, cajole: int = Side.BOTH, viewAs: str = None):
+    def __init__(self, code: str, precedence: int, func: callable, arity: Side = Side.BOTH,
+                 associativity: Side = Side.LEFT, cajole: Side = Side.BOTH, viewAs: str = None):
         self.code = code
         self.precedence = precedence
         self.function = func

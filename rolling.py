@@ -246,7 +246,7 @@ class EvalTree:
 
 
 def roll(expr: typing.Union[str, typing.List[Token]], modifiers=0, option='execute') -> \
-        typing.Union[int, float, str, typing.List[Token]]:
+        typing.Union[int, float, str, typing.List[Token], EvalTree]:
     """Roll dice and do arithmetic."""
     if isinstance(expr, (float, int)):
         # If you're naughty and pass a number in...
@@ -267,6 +267,9 @@ def roll(expr: typing.Union[str, typing.List[Token]], modifiers=0, option='execu
         tree = EvalTree("{}+{}".format(expr, modifiers))
         tree.critify()
         return tree.verbose_result()
+    elif option == 'compile':
+        tree = EvalTree("{}+{}".format(expr, modifiers))
+        return tree
     elif option == 'tokenize':
         return tokens(expr)
     elif option == 'from_tokens':
