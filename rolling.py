@@ -114,9 +114,14 @@ def tokens(s: str) -> typing.List[Token]:
 
 
 class EvalTree:
-    def __init__(self, string):
+    def __init__(self, source: typing.Union[str, typing.List[Token], 'EvalTree']):
         self.root: EvalTreeNode = None
-        self.from_tokens(tokens(string))
+        if isinstance(source, str):
+            self.from_tokens(tokens(source))
+        elif isinstance(source, EvalTree):
+            self.root = source.root
+        elif isinstance(source, list):
+            self.from_tokens(source)
 
     def evaluate(self) -> Final:
         """Recursively evaluate the tree
@@ -245,7 +250,7 @@ class EvalTree:
         return self
 
 
-def roll(expr: typing.Union[str, typing.List[Token]], modifiers=0, option='execute') -> \
+def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, option='execute') -> \
         typing.Union[int, float, str, typing.List[Token], EvalTree]:
     """Roll dice and do arithmetic."""
     if isinstance(expr, (float, int)):
@@ -261,21 +266,42 @@ def roll(expr: typing.Union[str, typing.List[Token]], modifiers=0, option='execu
     elif option == 'average':
         return EvalTree(expr).averageify().evaluate() + modifiers
     elif option == 'multipass':
-        tree = EvalTree("{}+{}".format(expr, modifiers))
+        if isinstance(expr, str):
+            tree = EvalTree("{}+{}".format(expr, modifiers))
+        elif isinstance(expr, EvalTree):
+            tree = expr
+        elif isinstance(expr, list):
+            tree = EvalTree(expr + [operators['+'], modifiers])
+        else:
+            raise TypeError("Expression must be a string, list of tokens, or already compiled evaluation tree")
         return tree.verbose_result()
     elif option == 'multipass_critical':
         tree = EvalTree("{}+{}".format(expr, modifiers))
         tree.critify()
         return tree.verbose_result()
     elif option == 'compile':
-        tree = EvalTree("{}+{}".format(expr, modifiers))
+        if isinstance(expr, EvalTree):
+            return expr
+        if isinstance(expr, str):
+            tree = EvalTree("{}+{}".format(expr, modifiers))
+        elif isinstance(expr, list):
+            tree = EvalTree(expr + [operators['+'], modifiers])
+        else:
+            raise TypeError("Expression must be a string, list of tokens, or already compiled evaluation tree")
         return tree
     elif option == 'tokenize':
-        return tokens(expr)
+        if isinstance(expr, str):
+            return tokens(expr)
+        elif isinstance(expr, list):
+            return expr
+        else:
+            raise TypeError("Cannot fully reconstruct expression from compiled form")
     elif option == 'from_tokens':
-        tree = EvalTree('')
-        tree.from_tokens(expr + [operators['+'], modifiers])
-        return tree.evaluate()
+        if isinstance(expr, list):
+            tree = EvalTree(expr + [operators['+'], modifiers])
+            return tree.evaluate()
+        else:
+            raise TypeError("You need to actually pass tokens in")
     elif option == 'zero':
         return 0
 
