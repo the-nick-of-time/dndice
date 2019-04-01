@@ -1,7 +1,7 @@
 import string
 import typing
 
-from operators import operators, Operator, Side, Roll
+from .operators import operators, Operator, Side, Roll
 
 Value = typing.Union[Roll, int, typing.List[float]]
 Result = typing.Union[Roll, int, float]
@@ -267,25 +267,34 @@ def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, opt
         return EvalTree(expr).averageify().evaluate() + modifiers
     elif option == 'multipass':
         if isinstance(expr, str):
-            tree = EvalTree("{}+{}".format(expr, modifiers))
+            if modifiers != 0:
+                tree = EvalTree("{}+{}".format(expr, modifiers))
+            else:
+                tree = EvalTree(expr)
         elif isinstance(expr, EvalTree):
             tree = expr
         elif isinstance(expr, list):
-            tree = EvalTree(expr + [operators['+'], modifiers])
+            tree = EvalTree(expr + ([operators['+'], modifiers] if modifiers != 0 else []))
         else:
             raise TypeError("Expression must be a string, list of tokens, or already compiled evaluation tree")
         return tree.verbose_result()
     elif option == 'multipass_critical':
-        tree = EvalTree("{}+{}".format(expr, modifiers))
+        if modifiers != 0:
+            tree = EvalTree("{}+{}".format(expr, modifiers))
+        else:
+            tree = EvalTree(expr)
         tree.critify()
         return tree.verbose_result()
     elif option == 'compile':
         if isinstance(expr, EvalTree):
             return expr
         if isinstance(expr, str):
-            tree = EvalTree("{}+{}".format(expr, modifiers))
+            if modifiers != 0:
+                tree = EvalTree("{}+{}".format(expr, modifiers))
+            else:
+                tree = EvalTree(expr)
         elif isinstance(expr, list):
-            tree = EvalTree(expr + [operators['+'], modifiers])
+            tree = EvalTree(expr + ([operators['+'], modifiers] if modifiers != 0 else []))
         else:
             raise TypeError("Expression must be a string, list of tokens, or already compiled evaluation tree")
         return tree
@@ -298,7 +307,7 @@ def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, opt
             raise TypeError("Cannot fully reconstruct expression from compiled form")
     elif option == 'from_tokens':
         if isinstance(expr, list):
-            tree = EvalTree(expr + [operators['+'], modifiers])
+            tree = EvalTree(expr + ([operators['+'], modifiers] if modifiers != 0 else []))
             return tree.evaluate()
         else:
             raise TypeError("You need to actually pass tokens in")
