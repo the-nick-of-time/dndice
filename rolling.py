@@ -249,6 +249,13 @@ class EvalTree:
                 node.payload = operators['dm']
         return self
 
+    def is_critical(self):
+        """Checks if this roll contains a d20 roll that is a natural 20"""
+        for node in self.pre_order():
+            if node.payload == 'd' and node.right.payload == 20 and node.value == 20:
+                return True
+        return False
+
 
 def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, option='execute') -> \
         typing.Union[int, float, str, typing.List[Token], EvalTree]:
