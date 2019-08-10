@@ -8,5 +8,6 @@ setup(
     license='GNU GPL v3',
     author='Nicholas Thurmes',
     author_email='nthurmes@gmail.com',
-    description='A module to interpret and evaluate rolls in the form that D&D gives, with some extensions.'
+    description='A module to interpret and evaluate rolls in the form that D&D gives, with some extensions.',
+    install_requires=['pyparsing']
 )
