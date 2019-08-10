@@ -8,7 +8,7 @@ from helpers import check_simple_types
 Number = typing.Union[int, float]
 
 
-class Side(enum.Flag):
+class Side(enum.IntFlag):
     """Represents which side an operation is applicable to.
 
     Note that checking if an operation includes one side is as simple as checking
@@ -24,7 +24,7 @@ class Side(enum.Flag):
 class Operator:
     """An operator like + or d that can be applied to values."""
 
-    def __init__(self, code: str, precedence: int, func: callable, arity: Side = Side.BOTH,
+    def __init__(self, code: str, precedence: int, func: typing.Callable, arity: Side = Side.BOTH,
                  associativity: Side = Side.LEFT, cajole: Side = Side.BOTH, viewAs: str = None):
         self.code = code
         self.precedence = precedence
@@ -366,7 +366,7 @@ def factorial(number: Number) -> Number:
     return rv
 
 
-operators = {
+OPERATORS = {
     '!': Operator('!', 8, factorial, arity=Side.LEFT, cajole=Side.LEFT),
     'd': Operator('d', 7, roll_basic, cajole=Side.LEFT),
     'da': Operator('da', 7, roll_average, cajole=Side.LEFT),
@@ -389,8 +389,8 @@ operators = {
     't': Operator('t', 6, threshold_lower, cajole=Side.RIGHT),
     'T': Operator('T', 6, threshold_upper, cajole=Side.RIGHT),
     '^': Operator('^', 5, lambda x, y: x ** y, associativity=Side.RIGHT),
-    'm': Operator('m', 4, lambda x: -x, arity=Side.RIGHT, cajole=Side.RIGHT),
-    'p': Operator('p', 4, lambda x: x, arity=Side.RIGHT, cajole=Side.RIGHT),
+    'm': Operator('m', 4, lambda x: -x, arity=Side.RIGHT, cajole=Side.RIGHT, viewAs='-'),
+    'p': Operator('p', 4, lambda x: x, arity=Side.RIGHT, cajole=Side.RIGHT, viewAs='+'),
     '*': Operator('*', 3, lambda x, y: x * y),
     '/': Operator('/', 3, lambda x, y: x / y),
     '%': Operator('%', 3, lambda x, y: x % y),

@@ -3,7 +3,7 @@ import string
 import typing
 
 from exceptions import InputTypeError
-from operators import operators, Operator, Side, Roll
+from operators import OPERATORS, Operator, Side, Roll
 
 Value = typing.Union[Roll, int, typing.List[float]]
 Result = typing.Union[Roll, int, float]
@@ -47,7 +47,7 @@ class EvalTreeNode:
 
 
 def _string_to_operator(s: str) -> typing.Union[str, Operator]:
-    return operators.get(s, s)
+    return OPERATORS.get(s, s)
 
 
 def _read_list(s: str, mode=float) -> typing.Iterable[float]:
@@ -62,7 +62,7 @@ def tokens(s: str) -> typing.List[Token]:
     :return: A list of tokens
     """
     # Every character that could be part of an operator
-    possibilities = set(''.join(operators))
+    possibilities = set(''.join(OPERATORS))
     curr_num = []
     curr_op = []
     tokenlist = []
@@ -91,7 +91,7 @@ def tokens(s: str) -> typing.List[Token]:
                     # This is the first time you see an operator since last
                     # time the list was cleared
                     curr_op.append(char)
-                elif ''.join(curr_op + [char]) in operators:
+                elif ''.join(curr_op + [char]) in OPERATORS:
                     # This means that the current char is part of a
                     # multicharacter operation like <=
                     curr_op.append(char)
@@ -241,7 +241,7 @@ class EvalTree:
         # Though why you're using roll_max anyway is a mystery
         for node in self.pre_order():
             if node.payload == 'd' or node.payload == 'da':
-                node.payload = operators['dc']
+                node.payload = OPERATORS['dc']
         return self
 
     def averageify(self):
@@ -252,7 +252,7 @@ class EvalTree:
         # Note: average is superseded by crit or max
         for node in self.pre_order():
             if node.payload == 'd':
-                node.payload = operators['da']
+                node.payload = OPERATORS['da']
         return self
 
     def maxify(self):
@@ -263,7 +263,7 @@ class EvalTree:
         # Max supersedes all
         for node in self.pre_order():
             if node.payload == 'd' or node.payload == 'da' or node.payload == 'dc':
-                node.payload = operators['dm']
+                node.payload = OPERATORS['dm']
         return self
 
     def is_critical(self):
@@ -284,7 +284,7 @@ class EvalTree:
 def _add_modifiers(tree: EvalTree, modifiers) -> EvalTree:
     # Manually stick the + <modifier> onto the root of the tree so it gets evaluated at the end
     new = EvalTree(None)
-    plus = EvalTreeNode(operators['+'])
+    plus = EvalTreeNode(OPERATORS['+'])
     number = EvalTreeNode(modifiers)
     plus.right = number
     new.root = plus
@@ -319,7 +319,7 @@ def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, opt
         elif isinstance(expr, EvalTree):
             tree = expr
         elif isinstance(expr, list):
-            tree = EvalTree(expr + ([operators['+'], modifiers] if modifiers != 0 else []))
+            tree = EvalTree(expr + ([OPERATORS['+'], modifiers] if modifiers != 0 else []))
         else:
             raise TypeError("Expression must be a string, list of tokens, or already compiled evaluation tree")
         return tree.verbose_result()
@@ -339,7 +339,7 @@ def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, opt
             else:
                 tree = EvalTree(expr)
         elif isinstance(expr, list):
-            tree = EvalTree(expr + ([operators['+'], modifiers] if modifiers != 0 else []))
+            tree = EvalTree(expr + ([OPERATORS['+'], modifiers] if modifiers != 0 else []))
         else:
             raise TypeError("Expression must be a string, list of tokens, or already compiled evaluation tree")
         return tree
@@ -352,7 +352,7 @@ def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, opt
             raise TypeError("Cannot fully reconstruct expression from compiled form")
     elif option == 'from_tokens':
         if isinstance(expr, list):
-            tree = EvalTree(expr + ([operators['+'], modifiers] if modifiers != 0 else []))
+            tree = EvalTree(expr + ([OPERATORS['+'], modifiers] if modifiers != 0 else []))
             return tree.evaluate()
         else:
             raise TypeError("You need to actually pass tokens in")
@@ -406,7 +406,7 @@ def tokenize(expr: str, modifiers=0) -> typing.List[Token]:
         raise InputTypeError("You can only tokenize a string expression.")
     tok = tokens(expr)
     if modifiers != 0:
-        tok.extend((operators['+'], modifiers))
+        tok.extend((OPERATORS['+'], modifiers))
     return tok
 
 

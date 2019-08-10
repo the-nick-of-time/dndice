@@ -2,6 +2,8 @@ import functools
 import inspect
 import typing
 
+from exceptions import ArgumentTypeError
+
 
 def check_simple_types(f: typing.Callable) -> typing.Callable:
     """A decorator that will check the types of the arguments at runtime.
@@ -17,7 +19,7 @@ def check_simple_types(f: typing.Callable) -> typing.Callable:
         for i, arg in enumerate(args):
             if not isinstance(arg, annotations[i][1]):
                 fmt = "Expecting {name} to be of type {typ}, was {realtyp} instead."
-                raise TypeError(fmt.format(name=annotations[i][0], typ=annotations[i][1], realtyp=type(arg)))
+                raise ArgumentTypeError(fmt.format(name=annotations[i][0], typ=annotations[i][1], realtyp=type(arg)))
         return f(*args)
 
     return ret
