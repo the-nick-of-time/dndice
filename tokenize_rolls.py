@@ -1,8 +1,11 @@
 import typing
+from itertools import groupby
 
-from pyparsing import ParserElement, Word, nums, PrecededBy, opAssoc, StringStart, oneOf
+from pyparsing import ParserElement, Word, nums, PrecededBy, opAssoc, StringStart, oneOf, Literal, infixNotation
 
 from operators import OPERATORS, Operator, Side
+
+OperatorDef = typing.Tuple[str, int, opAssoc, typing.Callable]
 
 
 def string_to_operator(s: str) -> typing.Union[str, Operator]:
@@ -17,62 +20,42 @@ def _convert_num_on_parse(toks):
     return int(toks[0])
 
 
-# def create_operator_matches() -> ParserElement:
-#     # Sorted from longest to shortest (2-length before 1-length) because the 2s need a chance to match before the 1s do
-#     opcodes = sorted([key for key in operators], key=lambda code: len(code), reverse=True)
-#     # Filter out the placeholders for the unary operators
-#     opcodes.remove('m')
-#     opcodes.remove('p')
-#     # Catch ( and )
-#     opcodes.append('(')
-#     opcodes.append(')')
-#     # TODO: URGENT: Create special matchers (regex?) to distinguish unary plus and minus from binary
-#     literalMatches = [Literal(code) for code in opcodes]
-#     composite = literalMatches[0]
-#     for matcher in literalMatches[1:]:
-#         composite = composite | matcher
-#     return composite
-
-
 def create_number_matches() -> ParserElement:
     number = Word(nums)
-    number.setParseAction(lambda toks: int(toks[0]))
+    number.setParseAction(_convert_num_on_parse)
     # Fudge dice and lists are going to be deprecated as possible values
     # fudge = PrecededBy('d') + Literal('F')
     return number
 
 
-def _format_operator_match(operator: Operator) -> typing.Tuple[str, int, opAssoc, typing.Callable]:
-    if operator.associativity == Side.LEFT:
+def _format_operator_match(operators: typing.List[Operator]) -> OperatorDef:
+    # Prerequisite: all operators in the group have the same precedence and associativity and arity
+    if operators[0].associativity == Side.LEFT:
         ass = opAssoc.LEFT
     else:
         ass = opAssoc.RIGHT
     action = _convert_operator_on_parse
-    match = operator.code
-    possibilities = oneOf([op.code for op in OPERATORS] + ['('])
-    determinant = PrecededBy(StringStart() | possibilities)
-    if operator == 'm':
-        match = determinant + '-'
-    elif operator == 'p':
-        match = determinant + '+'
-    return match, operator.arity, ass, action
+    # SPECIAL CASE: precedence level 4 is the unary sign operators
+    if operators[0].precedence == 4:
+        possibilities = oneOf([op.code for op in OPERATORS] + ['('])
+        determinant = PrecededBy(StringStart() | possibilities, retreat='1')
+        negative = determinant + Literal('-')
+        positive = determinant + Literal('+')
+        match = negative | positive
+    else:
+        match = oneOf([(op.viewAs or op.code) for op in operators])
+    return match, operators[0].arity, ass, action
 
 
-def create_operator_matches():
+def create_operator_matches() -> typing.List[OperatorDef]:
     ops = [op for op in OPERATORS.values()]
     # sort by precedence highest to lowest then by length from longest to shortest
-    ops.sort(key=lambda op: (op.precedence, len(op.code)), reverse=True)
-    prec = ops[0].precedence
-    group = []
-    groups = []
-    for op in ops:
-        if op.precedence == prec:
-            group.append(op)
-        else:
-            prec = op.precedence
-            groups.append(group)
-            group = [op]
+    # grouping associativity along the way
+    ops.sort(key=lambda op: (op.precedence, op.associativity, op.arity, len(op.code)), reverse=True)
+    groups_gen = groupby(ops, key=lambda op: (op.precedence, op.associativity, op.arity))
+    operatorDefs = [_format_operator_match(list(group)) for _, group in groups_gen]
+    return operatorDefs
 
 
 def create_grammar() -> ParserElement:
-    pass
+    return infixNotation(create_number_matches(), create_operator_matches())
