@@ -80,10 +80,10 @@ def tokens(s: str) -> typing.List[Token]:
             if curr_num:
                 tokenlist.append(int(''.join(curr_num)))
                 curr_num = []
-            if char == '+' and (i == 0 or s[i - 1] in possibilities or char == '('):
+            if char == '+' and (i == 0 or s[i - 1] in possibilities or s[i - 1] == '('):
                 tokenlist.append(_string_to_operator('p'))
                 curr_op = []
-            elif char == '-' and (i == 0 or s[i - 1] in possibilities or char == '('):
+            elif char == '-' and (i == 0 or s[i - 1] in possibilities or s[i - 1] == '('):
                 tokenlist.append(_string_to_operator('m'))
                 curr_op = []
             else:
