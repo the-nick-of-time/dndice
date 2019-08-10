@@ -1,7 +1,9 @@
+import enum
 import string
 import typing
 
-from .operators import operators, Operator, Side, Roll
+from exceptions import InputTypeError
+from operators import operators, Operator, Side, Roll
 
 Value = typing.Union[Roll, int, typing.List[float]]
 Result = typing.Union[Roll, int, float]
@@ -9,12 +11,23 @@ Final = typing.Union[int, float]
 Token = typing.Union[Value, Operator]
 
 
+class Mode(enum.Flag):
+    """Modifications to make to the roll expression before evaluation.
+
+    As a flag enum that can encode several modes at once, you want to check the state of `mode & Mode.<CONSTANT>`.
+    """
+    NORMAL = 0
+    AVERAGE = 1
+    CRIT = 2
+    MAX = 4
+
+
 class EvalTreeNode:
     def __init__(self, payload: Token, left=None, right=None):
         self.payload: Token = payload
         self.left: EvalTreeNode = left
         self.right: EvalTreeNode = right
-        self.value: Result = None
+        self.value: typing.Union[Result, None] = None
 
     def evaluate(self) -> Result:
         """Recursively evaluate this subtree and annotate this node with its computed value.
@@ -49,7 +62,7 @@ def tokens(s: str) -> typing.List[Token]:
     :return: A list of tokens
     """
     # Every character that could be part of an operator
-    possibilities = ''.join(operators)
+    possibilities = set(''.join(operators))
     curr_num = []
     curr_op = []
     tokenlist = []
@@ -67,10 +80,10 @@ def tokens(s: str) -> typing.List[Token]:
             if curr_num:
                 tokenlist.append(int(''.join(curr_num)))
                 curr_num = []
-            if char == '+' and (i == 0 or s[i - 1] in possibilities + '('):
+            if char == '+' and (i == 0 or s[i - 1] in possibilities or char == '('):
                 tokenlist.append(_string_to_operator('p'))
                 curr_op = []
-            elif char == '-' and (i == 0 or s[i - 1] in possibilities + '('):
+            elif char == '-' and (i == 0 or s[i - 1] in possibilities or char == '('):
                 tokenlist.append(_string_to_operator('m'))
                 curr_op = []
             else:
@@ -114,14 +127,19 @@ def tokens(s: str) -> typing.List[Token]:
 
 
 class EvalTree:
-    def __init__(self, source: typing.Union[str, typing.List[Token], 'EvalTree']):
-        self.root: EvalTreeNode = None
+    def __init__(self, source: typing.Union[str, typing.List[Token], 'EvalTree', None]):
+        self.root: typing.Union[EvalTreeNode, None] = None
         if isinstance(source, str):
             self.from_tokens(tokens(source))
         elif isinstance(source, EvalTree):
             self.root = source.root
         elif isinstance(source, list):
             self.from_tokens(source)
+        elif source is None:
+            # Explicitly do nothing; leave us with an empty tree
+            pass
+        else:
+            raise InputTypeError(f"You can't construct an EvalTree from type {type(source)}")
 
     def evaluate(self) -> Final:
         """Recursively evaluate the tree
@@ -129,10 +147,9 @@ class EvalTree:
         :return: The single final value from the tree
         """
         final = self.root.evaluate()
-        try:
-            return sum(final)
-        except TypeError:
-            return final
+        if isinstance(final, Roll):
+            final = final.sum()
+        return final
 
     def from_tokens(self, tokens: typing.List[Token]) -> None:
         """Construct and take possession of the expression tree formed from the infix token list
@@ -264,6 +281,20 @@ class EvalTree:
         return False
 
 
+def _add_modifiers(tree: EvalTree, modifiers) -> EvalTree:
+    # Manually stick the + <modifier> onto the root of the tree so it gets evaluated at the end
+    new = EvalTree(None)
+    plus = EvalTreeNode(operators['+'])
+    number = EvalTreeNode(modifiers)
+    plus.right = number
+    new.root = plus
+    new.root.left = tree.root
+    return new
+
+
+# NOTE/WARNING: Modifiers being nonzero when the original roll involves anything with lower precedence
+# will produce results that are probably not as intended. The modifiers are added at the very end
+# so if you're looking at the output of boolean or comparison operators you will see more.
 def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, option='execute') -> \
         typing.Union[int, float, str, typing.List[Token], EvalTree]:
     """Roll dice and do arithmetic."""
@@ -327,6 +358,56 @@ def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, opt
             raise TypeError("You need to actually pass tokens in")
     elif option == 'zero':
         return 0
+
+
+def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) -> str:
+    if not isinstance(expr, (str, EvalTree)):
+        raise InputTypeError("This function can only take a rollable string or a compiled evaluation tree.")
+    tree = EvalTree(expr)
+    if mode:
+        if mode & Mode.AVERAGE:
+            tree.averageify()
+        if mode & Mode.CRIT:
+            tree.critify()
+        if mode & Mode.MAX:
+            tree.maxify()
+    if modifiers != 0:
+        _add_modifiers(tree, modifiers)
+    return tree.verbose_result()
+
+
+def compile(expr: str, modifiers=0) -> EvalTree:
+    if not isinstance(expr, str):
+        raise InputTypeError("You can only compile a string into an EvalTree.")
+    tree = EvalTree(expr)
+    if modifiers != 0:
+        _add_modifiers(tree, modifiers)
+    return tree
+
+
+def basic(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) -> typing.Union[int, float]:
+    if not isinstance(expr, (str, EvalTree)):
+        raise InputTypeError("This function can only take a rollable string or a compiled evaluation tree.")
+    tree = EvalTree(expr)
+    if mode:
+        if mode & Mode.AVERAGE:
+            tree.averageify()
+        if mode & Mode.CRIT:
+            tree.critify()
+        if mode & Mode.MAX:
+            tree.maxify()
+    if modifiers != 0:
+        _add_modifiers(tree, modifiers)
+    return tree.evaluate()
+
+
+def tokenize(expr: str, modifiers=0) -> typing.List[Token]:
+    if not isinstance(expr, str):
+        raise InputTypeError("You can only tokenize a string expression.")
+    tok = tokens(expr)
+    if modifiers != 0:
+        tok.extend((operators['+'], modifiers))
+    return tok
 
 
 if __name__ == '__main__':

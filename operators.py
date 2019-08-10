@@ -2,6 +2,9 @@ import enum
 import random
 import typing
 
+from exceptions import ArgumentTypeError
+from helpers import check_simple_types
+
 Number = typing.Union[int, float]
 
 
@@ -37,7 +40,7 @@ class Operator:
         elif isinstance(other, Operator):
             return self.precedence >= other.precedence
         else:
-            raise TypeError('Other must be an operator or string')
+            raise ArgumentTypeError('Other must be an operator or string')
 
     def __gt__(self, other):
         if isinstance(other, str):
@@ -45,7 +48,7 @@ class Operator:
         elif isinstance(other, Operator):
             return self.precedence > other.precedence
         else:
-            raise TypeError('Other must be an operator or string')
+            raise ArgumentTypeError('Other must be an operator or string')
 
     def __le__(self, other):
         if isinstance(other, str):
@@ -53,7 +56,7 @@ class Operator:
         elif isinstance(other, Operator):
             return self.precedence <= other.precedence
         else:
-            raise TypeError('Other must be an operator or string')
+            raise ArgumentTypeError('Other must be an operator or string')
 
     def __lt__(self, other):
         if isinstance(other, str):
@@ -61,7 +64,7 @@ class Operator:
         elif isinstance(other, Operator):
             return self.precedence < other.precedence
         else:
-            raise TypeError('Other must be an operator or string')
+            raise ArgumentTypeError('Other must be an operator or string')
 
     def __eq__(self, other):
         if isinstance(other, Operator):
@@ -78,27 +81,24 @@ class Operator:
 
     def __call__(self, left, right):
         if self.cajole & Side.LEFT:
-            try:
-                left = sum(left)
-            except TypeError:
-                pass
+            if isinstance(left, Roll):
+                left = left.sum()
         if self.cajole & Side.RIGHT:
-            try:
-                right = sum(right)
-            except TypeError:
-                pass
+            if isinstance(right, Roll):
+                right = right.sum()
         return self.function(*filter(lambda v: v is not None, [left, right]))
 
 
-class Roll(list):
+class Roll:
     """A set of rolls."""
-    def __init__(self, *args, **kwargs):
-        list.__init__(self, *args, **kwargs)
+
+    def __init__(self, rolls=None):
+        self.rolls = rolls or []
         self.die = 0
         self.discards = []
 
     def __str__(self):
-        rolls = ', '.join([str(item) for item in self])
+        rolls = ', '.join([str(item) for item in self.rolls])
         discards = ', '.join([str(item) for item in self.discards])
         formatstr = '[d{die}: {rolls}; ({discards})]' if discards else '[d{die}: {rolls}]'
         return formatstr.format(die=str(self.die), rolls=rolls, discards=discards)
@@ -106,13 +106,41 @@ class Roll(list):
     def __repr__(self):
         return self.__str__()
 
+    def __iter__(self):
+        return iter(self.rolls)
+
+    def __len__(self):
+        return len(self.rolls)
+
+    def __getitem__(self, item):
+        return self.rolls[item]
+
+    def __setitem__(self, key, value):
+        self.rolls[key] = value
+
+    def __delitem__(self, key):
+        del self.rolls[key]
+
+    def append(self, obj):
+        self.rolls.append(obj)
+
+    def extend(self, iterable):
+        self.rolls.extend(iterable)
+
+    def sort(self):
+        self.rolls.sort()
+
+    def sum(self):
+        return sum(self.rolls)
+
     def copy(self) -> 'Roll':
-        rv = Roll(self[:])
+        rv = Roll(self.rolls[:])
         rv.die = self.die
         rv.discards = self.discards[:]
         return rv
 
 
+@check_simple_types
 def threshold_lower(roll: Roll, threshold: int) -> Roll:
     """Count the number of rolls that are equal to or above the given threshold.
 
@@ -126,6 +154,7 @@ def threshold_lower(roll: Roll, threshold: int) -> Roll:
     return modified
 
 
+@check_simple_types
 def threshold_upper(roll: Roll, threshold: int) -> Roll:
     """Count the number of rolls that are equal to or below the given threshold.
 
@@ -139,6 +168,7 @@ def threshold_upper(roll: Roll, threshold: int) -> Roll:
     return modified
 
 
+@check_simple_types
 def take_low(roll: Roll, number: int) -> Roll:
     """Preserve the lowest [number] rolls and discard the rest. Used to implement disadvantage in D&D 5e.
 
@@ -153,6 +183,7 @@ def take_low(roll: Roll, number: int) -> Roll:
     return roll
 
 
+@check_simple_types
 def take_high(roll: Roll, number: int) -> Roll:
     """Preserve the highest [number] rolls and discard the rest. Used to implement advantage in D&D 5e.
 
@@ -202,7 +233,6 @@ def roll_max(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
     # Returns a sorted (ascending) list of all the numbers rolled
     result = Roll()
     result.die = sides
-    # result.discards = [[] for all in range(number)]
     if isinstance(sides, list):
         result.extend([max(sides)] * number)
     else:
