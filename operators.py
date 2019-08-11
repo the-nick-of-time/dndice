@@ -1,3 +1,4 @@
+import copy
 import enum
 import random
 import typing
@@ -92,9 +93,10 @@ class Operator:
 class Roll:
     """A set of rolls."""
 
-    def __init__(self, rolls=None):
-        self.rolls = rolls or []
-        self.die = 0
+    def __init__(self, rolls=None, die=0):
+        # TODO: make rolls a property that is always sorted at set time
+        self.rolls: typing.List[Number] = rolls or []
+        self.die: typing.Union[int, typing.Tuple[float, ...]] = die
         self.discards = []
 
     def __str__(self):
@@ -130,12 +132,20 @@ class Roll:
     def sort(self):
         self.rolls.sort()
 
-    def sum(self):
-        return sum(self.rolls)
+    # TODO: move to using Roll.discard & Roll.replace instead of manually doing it in the op functions
+    def discard(self, index: typing.Union[int, slice]):
+        self.discards.extend(self.rolls[index])
+        del self.rolls[index]
 
+    def replace(self, index: typing.Union[int, slice], new: typing.Union[Number, typing.Iterable]):
+        self.discards.extend(self.rolls[index])
+        self.rolls[index] = new
+
+    # TODO: move to using copy and keeping the roll immutable
+    # try renaming the internal fields and fix broken parts
     def copy(self) -> 'Roll':
-        rv = Roll(self.rolls[:])
-        rv.die = self.die
+        rv = Roll(copy.deepcopy(self.rolls), self.die)
+        # discards won't contain any mutable objects
         rv.discards = self.discards[:]
         return rv
 
@@ -148,8 +158,7 @@ def threshold_lower(roll: Roll, threshold: int) -> Roll:
     :param threshold: The number to compare against.
     :return: A list of ones and zeros that indicate which rolls met the threshold.
     """
-    modified = Roll([1 if v >= threshold else 0 for v in roll])
-    modified.die = roll.die
+    modified = Roll([1 if v >= threshold else 0 for v in roll], roll.die)
     modified.discards = roll.discards[:] + roll[:]
     return modified
 
@@ -162,8 +171,7 @@ def threshold_upper(roll: Roll, threshold: int) -> Roll:
     :param threshold: The number to compare against.
     :return: A list of ones and zeros that indicate which rolls met the threshold.
     """
-    modified = Roll([1 if v <= threshold else 0 for v in roll])
-    modified.die = roll.die
+    modified = Roll([1 if v <= threshold else 0 for v in roll], roll.die)
     modified.discards = roll.discards[:] + roll[:]
     return modified
 
@@ -211,13 +219,14 @@ def roll_basic(number: int, sides: typing.Union[int, typing.Tuple[float, ...], R
 
 def single_die(sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Number:
     """Roll a single die."""
+    # TODO: isinstance
     if type(sides) is int:
         return random.randint(1, sides)
     elif type(sides) is tuple:
         return random.choice(sides)
     elif type(sides) is Roll:
         # Yeah this can happen, see 2d(1d4)
-        return random.randint(1, sides.sum())
+        return random.randint(1, sum(sides))
     raise ArgumentTypeError("You can't roll a die with sides: {sides}".format(sides=sides))
 
 
@@ -363,7 +372,8 @@ def ceil_val(original: Roll, top: Number) -> Roll:
     return modified
 
 
-def factorial(number: Number) -> Number:
+@check_simple_types
+def factorial(number: int) -> int:
     """Calculate the factorial of a number.
 
     :param number: The argument.
