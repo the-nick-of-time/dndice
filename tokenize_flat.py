@@ -8,7 +8,8 @@ Value = typing.Union[Roll, int, typing.List[float]]
 Token = typing.Union[Value, Operator, str]
 
 
-def _string_to_operator(s: str) -> typing.Union[str, Operator]:
+def _aggregator_to_operator(agg: typing.List[str]) -> typing.Union[str, Operator]:
+    s = ''.join(agg)
     return OPERATORS.get(s, s)
 
 
@@ -36,7 +37,7 @@ def tokens(s: str) -> typing.List[Token]:
         char = s[i]
         if char in nums:
             if curr_op:
-                op = _string_to_operator(''.join(curr_op))
+                op = _aggregator_to_operator(curr_op)
                 tokenlist.append(op)
                 curr_op = []
             curr_num.append(char)
@@ -47,12 +48,14 @@ def tokens(s: str) -> typing.List[Token]:
                 curr_num = []
             # + and - are the unary operators iff they occur at the beginning of an expression
             # or immediately after another operator
-            if char == '+' and (i == 0 or tokenlist[-1] in OPERATORS or tokenlist[-1] == '('):
-                tokenlist.append(_string_to_operator('p'))
-                curr_op = []
-            elif char == '-' and (i == 0 or tokenlist[-1] in possibilities or tokenlist[-1] == '('):
-                tokenlist.append(_string_to_operator('m'))
-                curr_op = []
+            if char in '+-' and (i == 0 or tokenlist[-1] in OPERATORS or tokenlist[-1] == '(' or curr_op):
+                if curr_op:
+                    tokenlist.append(_aggregator_to_operator(curr_op))
+                    curr_op = []
+                if char == '+':
+                    tokenlist.append(_aggregator_to_operator(['p']))
+                else:  # char is -
+                    tokenlist.append(_aggregator_to_operator(['m']))
             else:
                 if len(curr_op) == 0:
                     # This is the first time you see an operator since last
@@ -65,12 +68,12 @@ def tokens(s: str) -> typing.List[Token]:
                 else:
                     # Two separate operators; push out the old one and start
                     # collecting the new one
-                    op = _string_to_operator(''.join(curr_op))
+                    op = _aggregator_to_operator(curr_op)
                     tokenlist.append(op)
                     curr_op = [char]
         elif char == '[':
             if curr_op:
-                tokenlist.append(_string_to_operator(''.join(curr_op)))
+                tokenlist.append(_aggregator_to_operator(curr_op))
                 curr_op = []
             # Start a list of floats
             sideList = []
@@ -90,15 +93,20 @@ def tokens(s: str) -> typing.List[Token]:
                 raise ParseError("F is the 'fudge dice' value, and must appear as the side specifier of a roll. "
                                  "Error at {}".format(i))
             if curr_op:
-                tokenlist.append(_string_to_operator(''.join(curr_op)))
+                tokenlist.append(_aggregator_to_operator(curr_op))
                 curr_op = []
             # Fudge die
             tokenlist.append([-1, 0, 1])
+        else:
+            # Ignore all other characters
+            # This includes whitespace and all printing characters that do not occur in at least
+            # one operator expression
+            pass
         i += 1
     if curr_num:
         tokenlist.append(int(''.join(curr_num)))
     elif curr_op:
-        tokenlist.append(_string_to_operator(''.join(curr_op)))
+        tokenlist.append(_aggregator_to_operator(curr_op))
     opens = tokenlist.count('(')
     closes = tokenlist.count(')')
     if opens > closes:
