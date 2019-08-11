@@ -8,7 +8,7 @@ from tokenize_flat import tokens
 Value = typing.Union[Roll, int, typing.List[float]]
 Result = typing.Union[Roll, int, float]
 Final = typing.Union[int, float]
-Token = typing.Union[Value, Operator, typing.Literal['('], typing.Literal[')']]
+Token = typing.Union[Value, Operator, str]
 
 
 class Mode(enum.Flag):

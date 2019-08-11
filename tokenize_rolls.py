@@ -61,7 +61,7 @@ def create_operator_matches() -> typing.List[OperatorDef]:
 
 
 def create_grammar() -> ParserElement:
-    return infixNotation(create_number_matches(), create_operator_matches())
+    return infixNotation(create_number_matches(), create_operator_matches(), lpar=Literal('('), rpar=Literal(')'))
 
 
 grammar = create_grammar()
@@ -69,7 +69,7 @@ grammar = create_grammar()
 if __name__ == '__main__':
     tokens = grammar.parseString("1d4")
     print(tokens)
-    # grammar.parseString("-3d6")
+    grammar.parseString("-3d6")
     print(grammar.parseString("1d6d4"))
     print(grammar.parseString("1d4+2"))
     print(grammar.parseString("4d6*3+2*4"))

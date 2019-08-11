@@ -5,7 +5,7 @@ from exceptions import ParseError
 from operators import OPERATORS, Operator, Roll
 
 Value = typing.Union[Roll, int, typing.List[float]]
-Token = typing.Union[Value, Operator, typing.Literal['('], typing.Literal[')']]
+Token = typing.Union[Value, Operator, str]
 
 
 def _string_to_operator(s: str) -> typing.Union[str, Operator]:
