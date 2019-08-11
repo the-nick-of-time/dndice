@@ -81,14 +81,10 @@ class Operator:
 
     def __call__(self, left, right):
         if self.cajole & Side.LEFT:
-            if isinstance(left, Roll):
-                left = left.sum()
-            elif isinstance(left, (list, tuple)):
+            if isinstance(left, (Roll, tuple)):
                 left = sum(left)
         if self.cajole & Side.RIGHT:
-            if isinstance(right, Roll):
-                right = right.sum()
-            elif isinstance(right, (list, tuple)):
+            if isinstance(right, (Roll, tuple)):
                 right = sum(right)
         return self.function(*filter(lambda v: v is not None, [left, right]))
 
@@ -202,7 +198,7 @@ def take_high(roll: Roll, number: int) -> Roll:
     return roll
 
 
-def roll_basic(number: int, sides: typing.Union[int, typing.List[float], Roll]) -> Roll:
+def roll_basic(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
     """Roll a single set of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
     result = Roll()
@@ -213,11 +209,11 @@ def roll_basic(number: int, sides: typing.Union[int, typing.List[float], Roll]) 
     return result
 
 
-def single_die(sides: typing.Union[int, typing.List[float], Roll]) -> typing.Union[int, float]:
+def single_die(sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Number:
     """Roll a single die."""
     if type(sides) is int:
         return random.randint(1, sides)
-    elif type(sides) is list:
+    elif type(sides) is tuple:
         return random.choice(sides)
     elif type(sides) is Roll:
         # Yeah this can happen, see 2d(1d4)
@@ -225,7 +221,7 @@ def single_die(sides: typing.Union[int, typing.List[float], Roll]) -> typing.Uni
     raise ArgumentTypeError("You can't roll a die with sides: {sides}".format(sides=sides))
 
 
-def roll_critical(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
+def roll_critical(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
     """Roll double the normal number of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
     result = Roll()
@@ -236,25 +232,30 @@ def roll_critical(number: int, sides: typing.Union[int, typing.List[float]]) -> 
     return result
 
 
-def roll_max(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
+def roll_max(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
     """Roll double the normal number of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
     result = Roll()
     result.die = sides
-    if isinstance(sides, list):
+    if isinstance(sides, (tuple, Roll)):
+        # For rolls, this does go by the highest value that got rolled rather than that die's sides
         result.extend([max(sides)] * number)
-    else:
+    elif isinstance(sides, (int, float)):
         result.extend([sides] * number)
+    else:
+        raise ArgumentTypeError("roll_max can't be called with a {}-sided die", type(sides))
     return result
 
 
-def roll_average(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
+def roll_average(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
     val = Roll()
     val.die = sides
-    if isinstance(sides, list):
+    if isinstance(sides, (tuple, Roll)):
         val.extend([sum(sides) / len(sides)] * number)
-    else:
+    elif isinstance(sides, int):
         val.extend([(sides + 1) / 2] * number)
+    else:
+        raise ArgumentTypeError("roll_average can't be called with a {}-sided die", type(sides))
     return val
 
 

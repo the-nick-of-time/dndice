@@ -3,12 +3,10 @@ import typing
 
 from exceptions import InputTypeError
 from operators import OPERATORS, Operator, Side, Roll
-from tokenize_flat import tokens
+from tokenize_flat import tokens, Token
 
-Value = typing.Union[Roll, int, typing.List[float]]
 Result = typing.Union[Roll, int, float]
 Final = typing.Union[int, float]
-Token = typing.Union[Value, Operator, str]
 
 
 class Mode(enum.Flag):
@@ -79,7 +77,7 @@ class EvalTree:
         expression: typing.List[EvalTreeNode] = []
         operators: typing.List[Operator] = []
         for t in tokens:
-            if isinstance(t, (int, list)):
+            if isinstance(t, (int, tuple)):
                 expression.append(EvalTreeNode(t))
             elif t == '(':
                 operators.append(t)

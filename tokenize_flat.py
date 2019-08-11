@@ -4,7 +4,7 @@ import typing
 from exceptions import ParseError
 from operators import OPERATORS, Operator, Roll
 
-Value = typing.Union[Roll, int, typing.List[float]]
+Value = typing.Union[Roll, int, typing.Tuple[float, ...]]
 Token = typing.Union[Value, Operator, str]
 
 
@@ -13,9 +13,9 @@ def _aggregator_to_operator(agg: typing.List[str]) -> typing.Union[str, Operator
     return OPERATORS.get(s, s)
 
 
-def _read_list(s: str, mode=float) -> typing.List[float]:
+def _read_list(s: str, mode=float) -> typing.Tuple[float, ...]:
     """Read a list defined in a string."""
-    return list(map(mode, map(str.strip, s.split(','))))
+    return tuple(map(mode, map(str.strip, s.split(','))))
 
 
 def tokens(s: str) -> typing.List[Token]:
@@ -48,7 +48,7 @@ def tokens(s: str) -> typing.List[Token]:
                 curr_num = []
             # + and - are the unary operators iff they occur at the beginning of an expression
             # or immediately after another operator
-            if char in '+-' and (i == 0 or tokenlist[-1] in OPERATORS or tokenlist[-1] == '(' or curr_op):
+            if char in '+-' and (i == 0 or tokenlist[-1] == '(' or curr_op or isinstance(tokenlist[-1], Operator)):
                 if curr_op:
                     tokenlist.append(_aggregator_to_operator(curr_op))
                     curr_op = []
@@ -96,7 +96,7 @@ def tokens(s: str) -> typing.List[Token]:
                 tokenlist.append(_aggregator_to_operator(curr_op))
                 curr_op = []
             # Fudge die
-            tokenlist.append([-1, 0, 1])
+            tokenlist.append((-1, 0, 1))
         else:
             # Ignore all other characters
             # This includes whitespace and all printing characters that do not occur in at least
