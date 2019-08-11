@@ -27,7 +27,7 @@ def tokens(s: str) -> typing.List[Token]:
     :return: A list of tokens
     """
     # Every character that could be part of an operator
-    possibilities = set(''.join(OPERATORS))
+    possibilities = set(''.join(OPERATORS)) - set('p')
     nums = set(string.digits)
     curr_num: typing.List[str] = []
     curr_op: typing.List[str] = []
@@ -48,7 +48,7 @@ def tokens(s: str) -> typing.List[Token]:
                 curr_num = []
             # + and - are the unary operators iff they occur at the beginning of an expression
             # or immediately after another operator
-            if char in '+-' and (i == 0 or tokenlist[-1] == '(' or curr_op or isinstance(tokenlist[-1], Operator)):
+            if char in '+-' and (i == 0 or curr_op or tokenlist[-1] == '(' or isinstance(tokenlist[-1], Operator)):
                 if curr_op:
                     tokenlist.append(_aggregator_to_operator(curr_op))
                     curr_op = []

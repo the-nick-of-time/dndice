@@ -1,7 +1,7 @@
 import enum
 import typing
 
-from exceptions import InputTypeError, EvaluationError
+from exceptions import InputTypeError, EvaluationError, ParseError
 from helpers import wrap_exceptions_with
 from operators import OPERATORS, Operator, Side, Roll
 from tokenizer import tokens, Token
@@ -71,6 +71,7 @@ class EvalTree:
             final = final.sum()
         return final
 
+    @wrap_exceptions_with(ParseError, 'Failed to construct an expression from the token list.')
     def from_tokens(self, tokens: typing.List[Token]) -> None:
         """Construct and take possession of the expression tree formed from the infix token list
 
@@ -97,7 +98,7 @@ class EvalTree:
                 operators.append(t)
         while len(operators):
             self.one_operation(operators, expression)
-        self.root = expression.pop()
+        self.root = expression.pop() if len(expression) else EvalTreeNode(0)
 
     @staticmethod
     def one_operation(ops: typing.List[Operator], values: typing.List[EvalTreeNode]):
@@ -331,47 +332,48 @@ def tokenize(expr: str, modifiers=0) -> typing.List[Token]:
 
 
 if __name__ == '__main__':
-    testCases = ["1d4+1",
-                 "1d4-1",
-                 "2d20h1",
-                 "2d20l1",
-                 "40d20r1h1",
-                 "10d4r1",
-                 "10d4ro1",
-                 "10d4Ro1",
-                 "10d4R1",
-                 "1d4d4d4",
-                 "-5",
-                 "+1d4",
-                 "2*-1d4",
-                 "-2^1d4",
-                 "8d6/2",
-                 "1+(1+4)d6",
-                 "(1d6)!",
-                 "1d6!",
-                 "1d100<14",
-                 "1d100<=18",
-                 "8d6f2",
-                 "1d20+5>10",
-                 "5d20r<15",
-                 "5d20R<15",
-                 "(1d4-1)&(1d3-2>0)",
-                 "(1d4-1)|(1d3-2>0)",
-                 "1dc8+1dc4+3",
-                 "1dm6+1d6",
-                 "2d4c2",
-                 "2da6",
-                 "3da6",
-                 "2d10%2",
-                 "1d4=4|1d4=3",
-                 "1d8>=6",
-                 "10d8r>4",
-                 "10d8R>4",
-                 "10d[3,3,3,5]",
-                 "10d[3, 3, 3, 5]",
-                 "15d6t5",
-                 "15d6T1",
-                 ]
+    testCases = [
+        "1d4+1",
+        "1d4-1",
+        "2d20h1",
+        "2d20l1",
+        "40d20r1h1",
+        "10d4r1",
+        "10d4ro1",
+        "10d4Ro1",
+        "10d4R1",
+        "1d4d4d4",
+        "-5",
+        "+1d4",
+        "2*-1d4",
+        "-2^1d4",
+        "8d6/2",
+        "1+(1+4)d6",
+        "(1d6)!",
+        "1d6!",
+        "1d100<14",
+        "1d100<=18",
+        "8d6f2",
+        "1d20+5>10",
+        "5d20r<15",
+        "5d20R<15",
+        "(1d4-1)&(1d3-2>0)",
+        "(1d4-1)|(1d3-2>0)",
+        "1dc8+1dc4+3",
+        "1dm6+1d6",
+        "2d4c2",
+        "2da6",
+        "3da6",
+        "2d10%2",
+        "1d4=4|1d4=3",
+        "1d8>=6",
+        "10d8r>4",
+        "10d8R>4",
+        "10d[3,3,3,5]",
+        "10d[3, 3, 3, 5]",
+        "15d6t5",
+        "15d6T1",
+    ]
     for expr in testCases:
         tree = EvalTree(expr)
         print('EVALUATING ' + expr)
