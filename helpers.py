@@ -23,3 +23,17 @@ def check_simple_types(f: typing.Callable) -> typing.Callable:
         return f(*args)
 
     return ret
+
+
+def wrap_exceptions_with(ex: type(Exception), message='', level=Exception):
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapped(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except level as e:
+                raise ex(message) from e
+
+        return wrapped
+
+    return decorator

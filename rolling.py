@@ -1,7 +1,8 @@
 import enum
 import typing
 
-from exceptions import InputTypeError
+from exceptions import InputTypeError, EvaluationError
+from helpers import wrap_exceptions_with
 from operators import OPERATORS, Operator, Side, Roll
 from tokenize_flat import tokens, Token
 
@@ -59,6 +60,7 @@ class EvalTree:
         else:
             raise InputTypeError(f"You can't construct an EvalTree from type {type(source)}")
 
+    @wrap_exceptions_with(EvaluationError, 'Failed to evaluate expression.')
     def evaluate(self) -> Final:
         """Recursively evaluate the tree
 
