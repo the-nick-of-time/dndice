@@ -87,28 +87,14 @@ class TestRoll(unittest.TestCase):
         self.assertRaises(IndexError, lambda: self.roll[3])
 
     def test_set(self):
-        self.roll[0] = 10
-        self.assertEqual(self.roll[0], 10)
+        self.roll[2] = 10
+        self.assertEqual(self.roll[2], 10)
         with self.assertRaises(IndexError):
             self.roll[3] = 3
 
     def test_del(self):
         del self.roll[0]
         self.assertEqual(self.roll.rolls, [2, 3])
-
-    def test_append(self):
-        self.roll.append(10)
-        self.assertEqual(self.roll.rolls, [1, 2, 3, 10])
-
-    def test_extend(self):
-        self.roll.extend([1, 2, 3])
-        self.assertEqual(self.roll.rolls, [1, 2, 3, 1, 2, 3])
-
-    def test_sort(self):
-        self.roll.append(1)
-        self.assertEqual(self.roll.rolls, [1, 2, 3, 1])
-        self.roll.sort()
-        self.assertEqual(self.roll.rolls, [1, 1, 2, 3])
 
     def test_discard(self):
         self.roll.discard(1)
@@ -154,18 +140,16 @@ class TestDeterministicFunctions(unittest.TestCase):
 
     def test_threshold_upper(self):
         result = operators.threshold_upper(self.roll, 2)
-        self.assertEqual(result.rolls, [1, 1, 0, 0, 0, 0])
+        self.assertEqual(result.rolls, [0, 0, 0, 0, 1, 1])
         self.assertEqual(result.discards, [1, 2, 3, 4, 5, 6])
         self.assertEqual(result.die, self.roll.die)
 
     def test_take_low(self):
-        # the current implementation mutates the input
         result = operators.take_low(self.roll, 2)
         self.assertEqual(result.rolls, [1, 2])
         self.assertEqual(result.discards, [3, 4, 5, 6])
 
     def test_take_high(self):
-        # the current implementation mutates the input
         result = operators.take_high(self.roll, 2)
         self.assertEqual(result.rolls, [5, 6])
         self.assertEqual(result.discards, [1, 2, 3, 4])
@@ -191,11 +175,18 @@ class TestDeterministicFunctions(unittest.TestCase):
 class TestRollFunctions(unittest.TestCase):
 
     def setUp(self) -> None:
+        i = -1
+        rands = [4, 4, 4, 4, 4, 10, 10, 10, 10, 1, 1, 1]
+
+        def randint(start, end):
+            nonlocal i
+            i += 1
+            return rands[i]
+
         patcher = mock.patch('operators.random')
         self.addCleanup(patcher.stop)
         self.randomMocker = patcher.start()
-        # The most random number (https://xkcd.com/221/)
-        self.randomMocker.randint = lambda start, end: 4
+        self.randomMocker.randint = randint
         self.randomMocker.choice = lambda iterable: 1190
         self.roll = operators.Roll([1, 2, 3, 4, 5, 6], 6)
 
@@ -240,20 +231,30 @@ class TestRollFunctions(unittest.TestCase):
         self.assertEqual(result.rolls, [1, 3, 4, 4, 5, 6])
         self.assertEqual(result.discards, [2])
 
-    # TODO: make the mock randint() return a few different values in sequence to show what these do
     def test_reroll_once_higher(self):
         result = operators.reroll_once_higher(self.roll, 2)
         self.assertEqual(result.rolls, [1, 2, 4, 4, 4, 4])
         self.assertEqual(result.discards, [3, 4, 5, 6])
 
     def test_reroll_once_lower(self):
-        result = operators.reroll_once_lower(self.roll, 2)
-        self.assertEqual(result.rolls, [2, 3, 4, 4, 5, 6])
-        self.assertEqual(result.discards, [1])
+        result = operators.reroll_once_lower(self.roll, 3)
+        self.assertEqual(result.rolls, [3, 4, 4, 4, 5, 6])
+        self.assertEqual(result.discards, [1, 2])
 
-    # Also randint needs to return something else eventually for these to work
     def test_reroll_unconditional_on(self):
-        pass
+        result = operators.reroll_unconditional_on(self.roll, 4)
+        self.assertEqual(result.rolls, [1, 2, 3, 5, 6, 10])
+        self.assertEqual(result.discards, [4, 4, 4, 4, 4, 4])
+
+    def test_reroll_unconditional_higher(self):
+        result = operators.reroll_unconditional_higher(self.roll, 3)
+        self.assertEqual(result.rolls, [1, 1, 1, 1, 2, 3])
+        self.assertEqual(result.discards, [4, 4, 4, 4, 4, 4, 10, 10, 10, 10, 5, 6])
+
+    def test_reroll_unconditional_lower(self):
+        result = operators.reroll_unconditional_lower(self.roll, 5)
+        self.assertEqual(result.rolls, [5, 6, 10, 10, 10, 10])
+        self.assertEqual(result.discards, [1, 4, 4, 4, 4, 4, 2, 3, 4])
 
 
 if __name__ == '__main__':

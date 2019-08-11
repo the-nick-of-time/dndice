@@ -1,7 +1,7 @@
-import copy
 import enum
 import random
 import typing
+from copy import deepcopy
 
 from exceptions import ArgumentTypeError, ArgumentValueError
 from helpers import check_simple_types, wrap_exceptions_with
@@ -94,7 +94,7 @@ class Roll:
     """A set of rolls."""
 
     def __init__(self, rolls=None, die=0):
-        # TODO: make rolls a property that is always sorted at set time
+        self.__disableSorting = False
         self.rolls: typing.List[Number] = rolls or []
         self.die: typing.Union[int, typing.Tuple[float, ...]] = die
         self.discards = []
@@ -119,20 +119,29 @@ class Roll:
 
     def __setitem__(self, key, value):
         self.rolls[key] = value
+        if not self.__disableSorting:
+            self.rolls.sort()
 
     def __delitem__(self, key):
         del self.rolls[key]
 
-    def append(self, obj):
-        self.rolls.append(obj)
+    @property
+    def rolls(self) -> typing.List[Number]:
+        return self.__rolls
 
-    def extend(self, iterable):
-        self.rolls.extend(iterable)
+    @rolls.setter
+    def rolls(self, val: typing.List[Number]):
+        self.__rolls = val
+        if not self.__disableSorting:
+            self.__rolls.sort()
 
-    def sort(self):
-        self.rolls.sort()
+    def enable_sorting(self):
+        self.__disableSorting = False
+        self.__rolls.sort()
 
-    # TODO: move to using Roll.discard & Roll.replace instead of manually doing it in the op functions
+    def disable_sorting(self):
+        self.__disableSorting = True
+
     @wrap_exceptions_with(ArgumentValueError, 'Index out of bounds', IndexError)
     def discard(self, index: typing.Union[int, slice]):
         if isinstance(index, int):
@@ -164,10 +173,8 @@ class Roll:
             raise ArgumentTypeError('You can only index with an int or a slice.')
         self.rolls[index] = new
 
-    # TODO: move to using copy and keeping the roll immutable
-    # try renaming the internal fields and fix broken parts
     def copy(self) -> 'Roll':
-        rv = Roll(copy.deepcopy(self.rolls), self.die)
+        rv = Roll(deepcopy(self.rolls), self.die)
         # discards won't contain any mutable objects
         rv.discards = self.discards[:]
         return rv
@@ -207,11 +214,11 @@ def take_low(roll: Roll, number: int) -> Roll:
     :param number: The number of rolls to take.
     :return: A roll with the lowest rolls preserved and the rest discarded.
     """
-    if len(roll) > number:
-        n = len(roll) - number
-        roll.discards.extend(roll[-n:])
-        del roll[-n:]
-    return roll
+    copy = roll.copy()
+    if len(copy) > number:
+        n = len(copy) - number
+        copy.discard(slice(-n, None))
+    return copy
 
 
 @check_simple_types
@@ -222,32 +229,29 @@ def take_high(roll: Roll, number: int) -> Roll:
     :param number: The number of rolls to take.
     :return: A roll with the highest rolls preserved and the rest discarded.
     """
-    if len(roll) > number:
-        n = len(roll) - number
-        roll.discards.extend(roll[:n])
-        del roll[:n]
-    return roll
+    copy = roll.copy()
+    if len(copy) > number:
+        n = len(copy) - number
+        copy.discard(slice(None, n))
+    return copy
 
 
 def roll_basic(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
     """Roll a single set of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
-    result = Roll()
-    result.die = sides
+    rolls = []
     for all in range(number):
-        result.append(single_die(sides))
-    result.sort()
-    return result
+        rolls.append(single_die(sides))
+    return Roll(rolls, sides)
 
 
 def single_die(sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Number:
     """Roll a single die."""
-    # TODO: isinstance
-    if type(sides) is int:
+    if isinstance(sides, int):
         return random.randint(1, sides)
-    elif type(sides) is tuple:
+    elif isinstance(sides, tuple):
         return random.choice(sides)
-    elif type(sides) is Roll:
+    elif isinstance(sides, Roll):
         # Yeah this can happen, see 2d(1d4)
         return random.randint(1, sum(sides))
     raise ArgumentTypeError("You can't roll a die with sides: {sides}".format(sides=sides))
@@ -256,39 +260,33 @@ def single_die(sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Numb
 def roll_critical(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
     """Roll double the normal number of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
-    result = Roll()
-    result.die = sides
-    for all in range(2 * number):
-        result.append(single_die(sides))
-    result.sort()
-    return result
+    rolls = [single_die(sides) for _ in range(2 * number)]
+    return Roll(rolls, sides)
 
 
 def roll_max(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
     """Roll double the normal number of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
-    result = Roll()
-    result.die = sides
+    rolls = []
     if isinstance(sides, (tuple, Roll)):
         # For rolls, this does go by the highest value that got rolled rather than that die's sides
-        result.extend([max(sides)] * number)
+        rolls.extend([max(sides)] * number)
     elif isinstance(sides, (int, float)):
-        result.extend([sides] * number)
+        rolls.extend([sides] * number)
     else:
         raise ArgumentTypeError("roll_max can't be called with a {}-sided die", type(sides))
-    return result
+    return Roll(rolls, sides)
 
 
 def roll_average(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
-    val = Roll()
-    val.die = sides
+    rolls = []
     if isinstance(sides, (tuple, Roll)):
-        val.extend([sum(sides) / len(sides)] * number)
+        rolls.extend([sum(sides) / len(sides)] * number)
     elif isinstance(sides, int):
-        val.extend([(sides + 1) / 2] * number)
+        rolls.extend([(sides + 1) / 2] * number)
     else:
         raise ArgumentTypeError("roll_average can't be called with a {}-sided die", type(sides))
-    return val
+    return Roll(rolls, sides)
 
 
 def reroll_once(original: Roll, target: Number, comp: typing.Callable[[Number, Number], bool]) -> Roll:
@@ -301,12 +299,12 @@ def reroll_once(original: Roll, target: Number, comp: typing.Callable[[Number, N
     """
     modified = original.copy()
     i = 0
+    modified.disable_sorting()
     while i < len(original):
         if comp(modified[i], target):
-            modified.discards.append(modified[i])
-            modified[i] = single_die(modified.die)
+            modified.replace(i, single_die(modified.die))
         i += 1
-    modified.sort()
+    modified.enable_sorting()
     return modified
 
 
@@ -320,12 +318,12 @@ def reroll_unconditional(original: Roll, target: Number, comp: typing.Callable[[
     """
     modified = original.copy()
     i = 0
+    modified.disable_sorting()
     while i < len(original):
         while comp(modified[i], target):
-            modified.discards.append(modified[i])
-            modified[i] = single_die(modified.die)
+            modified.replace(i, single_die(modified.die))
         i += 1
-    modified.sort()
+    modified.enable_sorting()
     return modified
 
 
@@ -368,12 +366,12 @@ def floor_val(original: Roll, bottom: Number) -> Roll:
     """
     modified = original.copy()
     i = 0
+    modified.disable_sorting()
     while i < len(original):
         if modified[i] < bottom:
-            modified.discards.append(modified[i])
-            modified[i] = bottom
+            modified.replace(i, bottom)
         i += 1
-    modified.sort()
+    modified.enable_sorting()
     return modified
 
 
@@ -386,12 +384,12 @@ def ceil_val(original: Roll, top: Number) -> Roll:
     """
     modified = original.copy()
     i = 0
+    modified.disable_sorting()
     while i < len(original):
         if modified[i] > top:
-            modified.discards.append(modified[i])
-            modified[i] = top
+            modified.replace(i, top)
         i += 1
-    modified.sort()
+    modified.enable_sorting()
     return modified
 
 
