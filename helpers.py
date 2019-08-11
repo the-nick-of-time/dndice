@@ -25,13 +25,13 @@ def check_simple_types(f: typing.Callable) -> typing.Callable:
     return ret
 
 
-def wrap_exceptions_with(ex: type(Exception), message='', level=Exception):
+def wrap_exceptions_with(ex: type(Exception), message='', target=Exception):
     def decorator(f):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             try:
                 return f(*args, **kwargs)
-            except level as e:
+            except target as e:
                 raise ex(message) from e
 
         return wrapped

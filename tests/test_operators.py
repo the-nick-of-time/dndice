@@ -17,10 +17,80 @@ class TestOperator(unittest.TestCase):
 class TestRoll(unittest.TestCase):
 
     def setUp(self) -> None:
-        pass
+        self.roll = operators.Roll([1, 2, 3], 4)
 
-    def tearDown(self) -> None:
-        pass
+    def test_construction(self):
+        single = operators.Roll([1], 5)
+        self.assertEqual(single.rolls, [1])
+        self.assertEqual(single.die, 5)
+        self.assertEqual(single.discards, [])
+
+    def test_len(self):
+        none = operators.Roll([], 2)
+        self.assertEqual(len(none), 0)
+        one = operators.Roll([1], 5)
+        self.assertEqual(len(one), 1)
+        long = operators.Roll([3] * 10, 6)
+        self.assertEqual(len(long), 10)
+
+    def test_get(self):
+        self.assertEqual(self.roll[0], 1)
+        self.assertEqual(self.roll[2], 3)
+        self.assertRaises(IndexError, lambda: self.roll[3])
+
+    def test_set(self):
+        self.roll[0] = 10
+        self.assertEqual(self.roll[0], 10)
+        with self.assertRaises(IndexError):
+            self.roll[3] = 3
+
+    def test_del(self):
+        del self.roll[0]
+        self.assertEqual(self.roll.rolls, [2, 3])
+
+    def test_append(self):
+        self.roll.append(10)
+        self.assertEqual(self.roll.rolls, [1, 2, 3, 10])
+
+    def test_extend(self):
+        self.roll.extend([1, 2, 3])
+        self.assertEqual(self.roll.rolls, [1, 2, 3, 1, 2, 3])
+
+    def test_sort(self):
+        self.roll.append(1)
+        self.assertEqual(self.roll.rolls, [1, 2, 3, 1])
+        self.roll.sort()
+        self.assertEqual(self.roll.rolls, [1, 1, 2, 3])
+
+    def test_discard(self):
+        self.roll.discard(1)
+        self.assertEqual(self.roll.rolls, [1, 3])
+        self.assertEqual(self.roll.discards, [2])
+        slicyboi = operators.Roll([1, 2, 3, 4, 5, 6, 7, 8], 10)
+        slicyboi.discard(slice(0, 3))
+        self.assertEqual(slicyboi.rolls, [4, 5, 6, 7, 8])
+        self.assertEqual(slicyboi.discards, [1, 2, 3])
+        testy = operators.Roll([1, 2, 3], 6)
+        with self.assertRaises(exceptions.ArgumentValueError):
+            testy.discard(10)
+
+    def test_replace(self):
+        self.roll.replace(2, 5)
+        self.assertEqual(self.roll.rolls, [1, 2, 5])
+        self.assertEqual(self.roll.discards, [3])
+        slicyboi = operators.Roll([1, 2, 3, 4, 5, 6, 7, 8], 10)
+        slicyboi.replace(slice(5, len(slicyboi)), [20, 21, 22])
+        self.assertEqual(slicyboi.rolls, [1, 2, 3, 4, 5, 20, 21, 22])
+        self.assertEqual(slicyboi.discards, [6, 7, 8])
+
+    def test_copy(self):
+        copy = self.roll.copy()
+        self.assertEqual(self.roll.rolls, copy.rolls)
+        self.assertEqual(self.roll.discards, copy.discards)
+        self.assertEqual(self.roll.die, copy.die)
+        copy.discard(0)
+        self.assertNotEqual(self.roll.rolls, copy.rolls)
+        self.assertNotEqual(self.roll.discards, copy.discards)
 
 
 class TestDeterministicFunctions(unittest.TestCase):

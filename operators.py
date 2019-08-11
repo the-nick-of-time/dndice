@@ -4,7 +4,7 @@ import random
 import typing
 
 from exceptions import ArgumentTypeError, ArgumentValueError
-from helpers import check_simple_types
+from helpers import check_simple_types, wrap_exceptions_with
 
 Number = typing.Union[int, float]
 
@@ -133,12 +133,35 @@ class Roll:
         self.rolls.sort()
 
     # TODO: move to using Roll.discard & Roll.replace instead of manually doing it in the op functions
+    @wrap_exceptions_with(ArgumentValueError, 'Index out of bounds', IndexError)
     def discard(self, index: typing.Union[int, slice]):
-        self.discards.extend(self.rolls[index])
+        if isinstance(index, int):
+            self.discards.append(self.rolls[index])
+        elif isinstance(index, slice):
+            self.discards.extend(self.rolls[index])
+        else:
+            raise ArgumentTypeError('You can only index with an int or a slice.')
         del self.rolls[index]
 
-    def replace(self, index: typing.Union[int, slice], new: typing.Union[Number, typing.Iterable]):
-        self.discards.extend(self.rolls[index])
+    @typing.overload
+    def replace(self, index: int, new: Number) -> None:
+        ...
+
+    @typing.overload
+    def replace(self, index: slice, new: typing.Iterable) -> None:
+        ...
+
+    @wrap_exceptions_with(ArgumentValueError, 'Index out of bounds', IndexError)
+    def replace(self, index, new):
+        if isinstance(index, int):
+            self.discards.append(self.rolls[index])
+        elif isinstance(index, slice):
+            self.discards.extend(self.rolls[index])
+            start, stop, step = index.indices(len(self.rolls))
+            if stop - start != len(new):
+                raise ArgumentValueError('You have to replace a slice with the same number of items.')
+        else:
+            raise ArgumentTypeError('You can only index with an int or a slice.')
         self.rolls[index] = new
 
     # TODO: move to using copy and keeping the roll immutable
