@@ -2,7 +2,7 @@ import enum
 import random
 import typing
 
-from exceptions import ArgumentTypeError
+from exceptions import ArgumentTypeError, ArgumentValueError
 from helpers import check_simple_types
 
 Number = typing.Union[int, float]
@@ -83,9 +83,13 @@ class Operator:
         if self.cajole & Side.LEFT:
             if isinstance(left, Roll):
                 left = left.sum()
+            elif isinstance(left, (list, tuple)):
+                left = sum(left)
         if self.cajole & Side.RIGHT:
             if isinstance(right, Roll):
                 right = right.sum()
+            elif isinstance(right, (list, tuple)):
+                right = sum(right)
         return self.function(*filter(lambda v: v is not None, [left, right]))
 
 
@@ -198,7 +202,7 @@ def take_high(roll: Roll, number: int) -> Roll:
     return roll
 
 
-def roll_basic(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
+def roll_basic(number: int, sides: typing.Union[int, typing.List[float], Roll]) -> Roll:
     """Roll a single set of dice."""
     # Returns a sorted (ascending) list of all the numbers rolled
     result = Roll()
@@ -209,12 +213,16 @@ def roll_basic(number: int, sides: typing.Union[int, typing.List[float]]) -> Rol
     return result
 
 
-def single_die(sides: typing.Union[int, typing.List[float]]) -> typing.Union[int, float]:
+def single_die(sides: typing.Union[int, typing.List[float], Roll]) -> typing.Union[int, float]:
     """Roll a single die."""
     if type(sides) is int:
         return random.randint(1, sides)
     elif type(sides) is list:
         return random.choice(sides)
+    elif type(sides) is Roll:
+        # Yeah this can happen, see 2d(1d4)
+        return random.randint(1, sides.sum())
+    raise ArgumentTypeError("You can't roll a die with sides: {sides}".format(sides=sides))
 
 
 def roll_critical(number: int, sides: typing.Union[int, typing.List[float]]) -> Roll:
@@ -360,6 +368,8 @@ def factorial(number: Number) -> Number:
     :param number: The argument.
     :return: number!
     """
+    if number < 0:
+        raise ArgumentValueError("Factorial is undefined for negative numbers.")
     rv = 1
     for i in range(number):
         rv *= i + 1
