@@ -4,7 +4,7 @@ import typing
 from exceptions import InputTypeError, EvaluationError
 from helpers import wrap_exceptions_with
 from operators import OPERATORS, Operator, Side, Roll
-from tokenize_flat import tokens, Token
+from tokenizer import tokens, Token
 
 Result = typing.Union[Roll, int, float]
 Final = typing.Union[int, float]
