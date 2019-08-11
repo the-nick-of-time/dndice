@@ -67,9 +67,10 @@ class EvalTree:
         :return: The single final value from the tree
         """
         final = self.root.evaluate()
-        if isinstance(final, Roll):
-            final = final.sum()
-        return final
+        try:
+            return sum(final)
+        except TypeError:
+            return final
 
     @wrap_exceptions_with(ParseError, 'Failed to construct an expression from the token list.')
     def from_tokens(self, tokens: typing.List[Token]) -> None:
