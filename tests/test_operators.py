@@ -7,11 +7,59 @@ import operators
 
 class TestOperator(unittest.TestCase):
 
-    def setUp(self) -> None:
-        pass
+    @staticmethod
+    def echo(x, y):
+        return x, y
 
-    def tearDown(self) -> None:
-        pass
+    @staticmethod
+    def echo_one(x):
+        return x
+
+    def test_sorting(self):
+        highPrecedence = operators.Operator('^', 10, TestOperator.echo)
+        lowPrecedence = operators.Operator('=', 1, TestOperator.echo)
+        otherLowPrecedence = operators.Operator('|', 1, TestOperator.echo)
+        self.assertGreater(highPrecedence, lowPrecedence)
+        self.assertGreaterEqual(highPrecedence, lowPrecedence)
+        self.assertLess(lowPrecedence, highPrecedence)
+        self.assertLessEqual(lowPrecedence, highPrecedence)
+        self.assertGreaterEqual(lowPrecedence, otherLowPrecedence)
+        self.assertLessEqual(lowPrecedence, otherLowPrecedence)
+        nonOperator = '('
+        self.assertLess(highPrecedence, nonOperator)
+        self.assertLessEqual(highPrecedence, nonOperator)
+
+    def test_equals(self):
+        plus = operators.Operator('+', 2, lambda x, y: x + y)
+        positive = operators.Operator('p', 4, lambda x: x, arity=operators.Side.RIGHT, cajole=operators.Side.RIGHT,
+                                      viewAs='+')
+        self.assertNotEqual(plus, positive)
+        self.assertEqual(plus, '+')
+        self.assertEqual(plus, plus)
+        self.assertNotEqual(plus, 2)
+
+    def test_cajole(self):
+        cajoleRight = operators.Operator('h', 0, TestOperator.echo, cajole=operators.Side.RIGHT)
+        cajoleLeft = operators.Operator('d', 0, TestOperator.echo, cajole=operators.Side.LEFT)
+        cajoleBoth = operators.Operator('=', 1, TestOperator.echo)
+        bothOperands = ((1, 2, 3), (4, 5, 6))
+        self.assertEqual(cajoleBoth(*bothOperands), (6, 15))
+        self.assertEqual(cajoleLeft(*bothOperands), (6, (4, 5, 6)))
+        self.assertEqual(cajoleRight(*bothOperands), ((1, 2, 3), 15))
+
+    def test_arity(self):
+        arityLeft = operators.Operator('!', 8, TestOperator.echo_one, arity=operators.Side.LEFT,
+                                       cajole=operators.Side.NEITHER)
+        arityRight = operators.Operator('m', 4, TestOperator.echo_one, arity=operators.Side.RIGHT,
+                                        cajole=operators.Side.NEITHER)
+        arityBoth = operators.Operator('+', 2, TestOperator.echo, cajole=operators.Side.NEITHER)
+        bothOperands = ((1, 2, 3), (4, 5, 6))
+        # The decision to pass in None for unnecessary arguments is made at the higher level
+        leftOperand = ((1, 2, 3), None)
+        rightOperand = (None, (4, 5, 6))
+        self.assertEqual(arityBoth(*bothOperands), ((1, 2, 3), (4, 5, 6)))
+        self.assertEqual(arityLeft(*leftOperand), (1, 2, 3))
+        self.assertEqual(arityRight(*rightOperand), (4, 5, 6))
 
 
 class TestRoll(unittest.TestCase):
