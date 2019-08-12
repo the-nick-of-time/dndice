@@ -10,7 +10,7 @@ Result = typing.Union[Roll, int, float]
 Final = typing.Union[int, float]
 
 
-class Mode(enum.Flag):
+class Mode(enum.IntFlag):
     """Modifications to make to the roll expression before evaluation.
 
     As a flag enum that can encode several modes at once, you want to check the state of `mode & Mode.<CONSTANT>`.
@@ -19,6 +19,15 @@ class Mode(enum.Flag):
     AVERAGE = 1
     CRIT = 2
     MAX = 4
+
+    @classmethod
+    def from_string(cls, string: str) -> 'Mode':
+        encode = {
+            'average': cls.AVERAGE,
+            'critical': cls.CRIT,
+            'maximum': cls.MAX,
+        }
+        return encode.get(string.lower(), cls.NORMAL)
 
 
 class EvalTreeNode:
@@ -233,45 +242,13 @@ def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, opt
     elif option == 'average':
         return EvalTree(expr).averageify().evaluate() + modifiers
     elif option == 'multipass':
-        if isinstance(expr, str):
-            if modifiers != 0:
-                tree = EvalTree("{}+{}".format(expr, modifiers))
-            else:
-                tree = EvalTree(expr)
-        elif isinstance(expr, EvalTree):
-            tree = expr
-        elif isinstance(expr, list):
-            tree = EvalTree(expr + ([OPERATORS['+'], modifiers] if modifiers != 0 else []))
-        else:
-            raise TypeError("Expression must be a string, list of tokens, or already compiled evaluation tree")
-        return tree.verbose_result()
+        return verbose(expr, modifiers=modifiers)
     elif option == 'multipass_critical':
-        if modifiers != 0:
-            tree = EvalTree("{}+{}".format(expr, modifiers))
-        else:
-            tree = EvalTree(expr)
-        tree.critify()
-        return tree.verbose_result()
+        return verbose(expr, Mode.CRIT, modifiers)
     elif option == 'compile':
-        if isinstance(expr, EvalTree):
-            return expr
-        if isinstance(expr, str):
-            if modifiers != 0:
-                tree = EvalTree("{}+{}".format(expr, modifiers))
-            else:
-                tree = EvalTree(expr)
-        elif isinstance(expr, list):
-            tree = EvalTree(expr + ([OPERATORS['+'], modifiers] if modifiers != 0 else []))
-        else:
-            raise TypeError("Expression must be a string, list of tokens, or already compiled evaluation tree")
-        return tree
+        return compile(expr, modifiers)
     elif option == 'tokenize':
-        if isinstance(expr, str):
-            return tokens(expr)
-        elif isinstance(expr, list):
-            return expr
-        else:
-            raise TypeError("Cannot fully reconstruct expression from compiled form")
+        return tokenize(expr, modifiers)
     elif option == 'from_tokens':
         if isinstance(expr, list):
             tree = EvalTree(expr + ([OPERATORS['+'], modifiers] if modifiers != 0 else []))
@@ -318,9 +295,7 @@ def basic(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers
             tree.critify()
         if mode & Mode.MAX:
             tree.maxify()
-    if modifiers != 0:
-        _add_modifiers(tree, modifiers)
-    return tree.evaluate()
+    return tree.evaluate() + modifiers
 
 
 def tokenize(expr: str, modifiers=0) -> typing.List[Token]:
