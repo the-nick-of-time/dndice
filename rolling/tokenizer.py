@@ -1,8 +1,8 @@
 import string
 import typing
 
-from exceptions import ParseError
-from operators import OPERATORS, Operator, Roll
+from .exceptions import ParseError
+from .operators import OPERATORS, Operator, Roll
 
 Value = typing.Union[Roll, int, typing.Tuple[float, ...]]
 Token = typing.Union[Value, Operator, str]

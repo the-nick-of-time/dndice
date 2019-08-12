@@ -2,7 +2,7 @@ import functools
 import inspect
 import typing
 
-from exceptions import ArgumentTypeError
+from .exceptions import ArgumentTypeError
 
 
 def check_simple_types(f: typing.Callable) -> typing.Callable:

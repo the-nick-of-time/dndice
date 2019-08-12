@@ -1,8 +1,7 @@
 import unittest
 from unittest import mock
 
-import exceptions
-import operators
+from rolling import exceptions, operators
 
 
 class TestOperator(unittest.TestCase):
@@ -183,7 +182,7 @@ class TestRollFunctions(unittest.TestCase):
             i += 1
             return rands[i]
 
-        patcher = mock.patch('operators.random')
+        patcher = mock.patch('rolling.operators.random')
         self.addCleanup(patcher.stop)
         self.randomMocker = patcher.start()
         self.randomMocker.randint = randint

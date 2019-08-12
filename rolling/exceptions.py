@@ -1,9 +1,14 @@
-class ParseError(ValueError):
+class RollError(Exception):
+    """A simple base class for all exceptions raised by this module."""
+    pass
+
+
+class ParseError(RollError, ValueError):
     """The roll expression was malformed as to prevent parsing into an expression tree."""
     pass
 
 
-class EvaluationError(RuntimeError):
+class EvaluationError(RollError, RuntimeError):
     """The roll could not be evaluated."""
     pass
 

@@ -3,8 +3,8 @@ import random
 import typing
 from copy import deepcopy
 
-from exceptions import ArgumentTypeError, ArgumentValueError
-from helpers import check_simple_types, wrap_exceptions_with
+from .exceptions import ArgumentTypeError, ArgumentValueError
+from .helpers import check_simple_types, wrap_exceptions_with
 
 Number = typing.Union[int, float]
 
