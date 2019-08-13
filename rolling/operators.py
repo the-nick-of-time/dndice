@@ -1,3 +1,15 @@
+"""Defines code representations of arithmetic and rolling operators.
+
+The single most important export from this module is the ``OPERATORS`` constant. It is a dictionary mapping from the
+operator codes (think '+', '>=', 'd', etc.) to the actual operator objects.
+
+You might also want to pull out the ``Side`` enum and ``Operator`` class if you want to define your own or otherwise do
+some customization with the operators.
+
+The ``Roll`` object could be useful if you are trying to extend the rolling functionality.
+
+All the various functions are not really worth talking about, they just implement the operations defined here.
+"""
 import enum
 import random
 import typing
@@ -13,8 +25,8 @@ class Side(enum.IntFlag):
     """Represents which side an operation is applicable to.
 
     Note that checking if an operation includes one side is as simple as checking
-    `Operator.arity & Side.LEFT` or `Operator.arity & Side.RIGHT`,
-    whichever one you want
+    ``Operator.arity & Side.LEFT`` or ``Operator.arity & Side.RIGHT``,
+    whichever one you want.
     """
     RIGHT = 0b01
     LEFT = 0b10
@@ -23,10 +35,34 @@ class Side(enum.IntFlag):
 
 
 class Operator:
-    """An operator like + or d that can be applied to values."""
+    """An operator like + or d that can be applied to values.
+
+    This class implements a full ordering, but ``==`` has very different semantics. The ordering operators
+    (``>``, ``<``, ``>=``, ``<=``) all compare the precedence of two given operators. ``==`` on the other hand compares
+    value/identity, so it is intended to match when comparing two instances of the same operator or, more importantly,
+    comparing an ``Operator`` to the string that should produce it. For instance, the ``Operator`` instance for addition
+    should return ``True`` for ``addition == '+'``.
+    """
 
     def __init__(self, code: str, precedence: int, func: typing.Callable, arity: Side = Side.BOTH,
                  associativity: Side = Side.LEFT, cajole: Side = Side.BOTH, viewAs: str = None):
+        """Create a new operator.
+
+        :param code: The string that represents this operation. For instance, addition is '+' and greater than or \
+            equal to is '>='. Since the negative sign and minus operator would be identical in this respect, the \
+            sign's ``code`` differs and is 'm' instead. Similar with positive sign and 'p'.
+        :param precedence: A higher number means greater precedence. Currently the numbers 1-8 are in use though maybe \
+            you can think of more.
+        :param func: The function performed by this operation. It must take one or two arguments and return one \
+            result, with no side effects.
+        :param arity: Which side(s) this operator draws operands from. For instance, '+' takes arguments on left and \
+            right, while '!' takes only one argument on its left.
+        :param associativity: Which direction the associativity goes. Basically, when precedence is tied, should this \
+            be evaluated left to right or right to left. Exponentiation is the only common operation that does the \
+            latter.
+        :param cajole: Which operand(s) should be collapsed into a single value before operation.
+        :param viewAs: If the code is different than the actual operation string, fill viewAs with the real string.
+        """
         self.code = code
         self.precedence = precedence
         self.function = func
@@ -81,6 +117,17 @@ class Operator:
         return self.viewAs or self.code
 
     def __call__(self, left, right):
+        """Evaluate the function associated with this operator.
+
+        Most operator functions are binary and will consume both ``left`` and ``right``. For unary operators the caller
+        **must** pass in None to fill the unused operand slot. This may be changed in future to be cleverer.
+
+        The ``cajole`` field of this object is used at this stage to collapse one or both operands into a single value.
+        If one of the sides is targeted by the value of ``cajole``, and the corresponding operand is a ``Roll`` or other
+        iterator, it will be replaced by its sum.
+
+        :param left: The left operand. Usually an int or a Roll.
+        """
         if self.cajole & Side.LEFT:
             if isinstance(left, (Roll, tuple)):
                 left = sum(left)
@@ -91,9 +138,24 @@ class Operator:
 
 
 class Roll:
-    """A set of rolls."""
+    """A set of rolls.
+
+    This tracks the active rolls (those that are actually counted) as well as what die was rolled to get this and any
+    discarded values.
+
+    The active rolls are assumed by many of the associated functions to always be sorted ascending. To effect this, a
+    Roll instance will automatically sort the active roll list every time there is an update to it. However, sometimes
+    the index of a particular element does matter, like with the ``reroll_unconditional`` class of functions that
+    repeatedly perform in-place replacements on those elements. Therefore you have the chance to enable and disable this
+    auto-sorting.
+    """
 
     def __init__(self, rolls=None, die=0):
+        """Create a new roll.
+
+        :param rolls: The starting list of values to be used.
+        :param die: The number of sides of the die that was rolled to get those values.
+        """
         self.__disableSorting = False
         self.rolls: typing.List[Number] = rolls or []
         self.die: typing.Union[int, typing.Tuple[float, ...]] = die
@@ -144,6 +206,11 @@ class Roll:
 
     @wrap_exceptions_with(ArgumentValueError, 'Index out of bounds', IndexError)
     def discard(self, index: typing.Union[int, slice]):
+        """Discard a roll or slice of rolls by index.
+
+        :param index: The indexing object (int or slice) to select values to discard.
+        :raises ArgumentTypeError: When something other than int or slice is used.
+        """
         if isinstance(index, int):
             self.discards.append(self.rolls[index])
         elif isinstance(index, slice):
@@ -162,6 +229,15 @@ class Roll:
 
     @wrap_exceptions_with(ArgumentValueError, 'Index out of bounds', IndexError)
     def replace(self, index, new):
+        """Discard a roll or slice of rolls and replace with new values.
+
+        If you are discarding a slice, you must replace it with a sequence of equal length.
+
+        :param index: An indexing object, an int or a slice.
+        :param new: The new value or values to replace the old with.
+        :raises ArgumentTypeError: When something other than int or slice is used.
+        :raises ArgumentValueError: When the size of the replacement doesn't match the size of the slice.
+        """
         if isinstance(index, int):
             self.discards.append(self.rolls[index])
         elif isinstance(index, slice):
@@ -174,6 +250,7 @@ class Roll:
         self.rolls[index] = new
 
     def copy(self) -> 'Roll':
+        """Create a copy of this object to avoid mutating an original."""
         rv = Roll(deepcopy(self.rolls), self.die)
         # discards won't contain any mutable objects
         rv.discards = self.discards[:]
@@ -237,7 +314,12 @@ def take_high(roll: Roll, number: int) -> Roll:
 
 
 def roll_basic(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
-    """Roll a single set of dice."""
+    """Roll a single set of dice.
+
+    :param number: The number of dice to be rolled.
+    :param sides: Roll a ``sides``-sided die. Or, if given a collection of side values, pick one from there.
+    :return: A ``Roll`` holding all the dice rolls.
+    """
     # Returns a sorted (ascending) list of all the numbers rolled
     rolls = []
     for all in range(number):
@@ -246,7 +328,18 @@ def roll_basic(number: int, sides: typing.Union[int, typing.Tuple[float, ...], R
 
 
 def single_die(sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Number:
-    """Roll a single die."""
+    """Roll a single die.
+
+    The behavior is different based on what gets passed in. Given an int, it rolls a die with that many sides
+    (precisely, it returns a random number between 1 and ``sides`` inclusive).
+    Given a tuple, meaning the user specified a particular set of values for the sides of the die, it returns one of
+    those values selected at random.
+    Given a ``Roll``, which can happen in weird cases like 2d(1d4), it will take the sum of that roll and use it as the
+    number of sides of a die.
+
+    :param sides: The number of sides, or specific side values.
+    :return: The random value that was rolled.
+    """
     if isinstance(sides, int):
         return random.randint(1, sides)
     elif isinstance(sides, tuple):
@@ -265,7 +358,7 @@ def roll_critical(number: int, sides: typing.Union[int, typing.Tuple[float, ...]
 
 
 def roll_max(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
-    """Roll double the normal number of dice."""
+    """Roll a maximum value on every die."""
     # Returns a sorted (ascending) list of all the numbers rolled
     rolls = []
     if isinstance(sides, (tuple, Roll)):
@@ -279,6 +372,7 @@ def roll_max(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Rol
 
 
 def roll_average(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
+    """Roll an average value on every die. On most dice this will have a .5 in the result."""
     rolls = []
     if isinstance(sides, (tuple, Roll)):
         rolls.extend([sum(sides) / len(sides)] * number)

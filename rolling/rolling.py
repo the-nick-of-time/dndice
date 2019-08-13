@@ -15,10 +15,10 @@ class Mode(enum.IntFlag):
 
     As a flag enum that can encode several modes at once, you want to check the state of `mode & Mode.<CONSTANT>`.
     """
-    NORMAL = 0
-    AVERAGE = 1
-    CRIT = 2
-    MAX = 4
+    NORMAL = 0b000
+    AVERAGE = 0b001
+    CRIT = 0b010
+    MAX = 0b100
 
     @classmethod
     def from_string(cls, string: str) -> 'Mode':
