@@ -10,14 +10,43 @@ Final = typing.Union[int, float]
 
 
 class EvalTreeNode:
+    __slots__ = 'payload', 'left', 'right', 'value'
+
     def __init__(self, payload: Token, left: 'EvalTreeNode' = None, right: 'EvalTreeNode' = None):
+        """Initialize a new node in the expression tree.
+
+        Leaf nodes (those with no left or right children) are guaranteed to hold concrete values while non-leaf nodes
+        are guaranteed to hold operators.
+
+        :param payload: The operator or value that is expressed by this node.
+        :param left: The left child of this node, which holds the operand or expression to the left of this operator.
+        :param right: The right child of this node, which holds the operand or expression to the right of this operator.
+        """
         self.payload: Token = payload
         self.left: EvalTreeNode = left
         self.right: EvalTreeNode = right
         self.value: typing.Optional[Result] = None
 
     def evaluate(self) -> Result:
-        """Recursively evaluate this subtree and annotate this node with its computed value.
+        r"""Recursively evaluate this subtree and annotate this node with its computed value.
+
+        Along the way, the ``value`` of each node is set to the value of the expression at this stage, so it can be
+        inspected later. This is used to great effect by the "verbose mode" of the main roll function.
+
+        What is meant by "value of the expression at this stage can be shown through a diagram: ::
+
+              -        < 0
+            /  \
+          *     +      < 1
+        /  \  /  \
+        4  5  1  2     < 2
+
+        This is the tree that would result from the expression 4 * 5 - (1 + 2). If we were to start evaluating this
+        tree, we would first recursively run down all three levels. Once reaching the leaves, their value is obvious:
+        they are concrete already. Copy their ``payload`` into their ``value``. One level up, and we reach operators.
+        The operator nodes receive values from each of their children, perform the operation they hold, and fill their
+        ``value`` slot with the result. For instance, the '*' would perform 4 * 5 and store 20. This continues until the
+        root is reached, and the final value is returned.
 
         :return: The value computed.
         """
@@ -34,7 +63,13 @@ class EvalTreeNode:
 
 
 class EvalTree:
+    __slots__ = 'root',
+
     def __init__(self, source: typing.Union[str, typing.List[Token], 'EvalTree', None]):
+        """Initialize a tree of EvalTreeNodes that represent a given expression.
+
+        :param source: The expression, generally as a string or already tokenized list or compiled tree.
+        """
         self.root: typing.Optional[EvalTreeNode] = None
         if isinstance(source, str):
             self.from_tokens(tokens(source))
@@ -50,9 +85,9 @@ class EvalTree:
 
     @wrap_exceptions_with(EvaluationError, 'Failed to evaluate expression.')
     def evaluate(self) -> Final:
-        """Recursively evaluate the tree
+        """Recursively evaluate the tree.
 
-        :return: The single final value from the tree
+        :return: The single final value from the tree.
         """
         final = self.root.evaluate()
         try:
@@ -62,9 +97,9 @@ class EvalTree:
 
     @wrap_exceptions_with(ParseError, 'Failed to construct an expression from the token list.')
     def from_tokens(self, tokens: typing.List[Token]) -> None:
-        """Construct and take possession of the expression tree formed from the infix token list
+        """Construct and take possession of the expression tree formed from the infix token list.
 
-        :param tokens: The list of tokens parsed from the infix expression
+        :param tokens: The list of tokens parsed from the infix expression.
         """
         expression: typing.List[EvalTreeNode] = []
         operators: typing.List[Operator] = []
@@ -91,11 +126,11 @@ class EvalTree:
 
     @staticmethod
     def one_operation(ops: typing.List[Operator], values: typing.List[EvalTreeNode]):
-        """Pop the top operator and give it the top one or two subtrees from the values stack as children
-        Then push the resulting subtree onto the values stack for application in future
+        """Pop the top operator and give it the top one or two subtrees from the values stack as children.
+        Then push the resulting subtree onto the values stack for application in future.
 
-        :param ops: The current stack of operators
-        :param values: The current stack of values
+        :param ops: The current stack of operators.
+        :param values: The current stack of values.
         """
         current = ops.pop()
         node = EvalTreeNode(current)
@@ -133,19 +168,21 @@ class EvalTree:
                 + self.__verbose_result_recursive(current.right, threshold))
 
     def pre_order(self) -> typing.Generator[EvalTreeNode, None, None]:
+        """Perform a pre-order/breadth-first traversal of the tree."""
         return self.__pre_order_recursive(self.root)
 
     def __pre_order_recursive(self, current: EvalTreeNode) -> typing.Generator[EvalTreeNode, None, None]:
+        """Recurse through the tree."""
         yield current
         if current.left:
             yield self.__pre_order_recursive(current.left)
         if current.right:
             yield self.__pre_order_recursive(current.right)
 
-    def critify(self):
+    def critify(self) -> 'EvalTree':
         """Modify rolls in this expression to critical rolls.
 
-        :rtype: EvalTree
+        :return: This tree after it has been modified in-place.
         """
         # Note: crit is superseded by maximum
         # Though why you're using roll_max anyway is a mystery
@@ -154,10 +191,10 @@ class EvalTree:
                 node.payload = OPERATORS['dc']
         return self
 
-    def averageify(self):
+    def averageify(self) -> 'EvalTree':
         """Modify rolls in this expression to average rolls.
 
-        :rtype: EvalTree
+        :return: This tree after it has been modified in-place.
         """
         # Note: average is superseded by crit or max
         for node in self.pre_order():
@@ -165,10 +202,10 @@ class EvalTree:
                 node.payload = OPERATORS['da']
         return self
 
-    def maxify(self):
+    def maxify(self) -> 'EvalTree':
         """Modify rolls in this expression to maximum rolls.
 
-        :rtype: EvalTree
+        :return: This tree after it has been modified in-place.
         """
         # Max supersedes all
         for node in self.pre_order():
@@ -176,15 +213,15 @@ class EvalTree:
                 node.payload = OPERATORS['dm']
         return self
 
-    def is_critical(self):
-        """Checks if this roll contains a d20 roll that is a natural 20"""
+    def is_critical(self) -> bool:
+        """Checks if this roll contains a d20 roll that is a natural 20."""
         for node in self.pre_order():
             if node.payload == 'd' and node.right.payload == [20] and node.value == 20:
                 return True
         return False
 
-    def is_fail(self):
-        """Checks if this roll contains a d20 roll that is a natural 1"""
+    def is_fail(self) -> bool:
+        """Checks if this roll contains a d20 roll that is a natural 1."""
         for node in self.pre_order():
             if node.payload == 'd' and node.right.payload == [1] and node.value == 20:
                 return True
