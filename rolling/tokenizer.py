@@ -8,9 +8,8 @@ Value = typing.Union[Roll, int, typing.Tuple[float, ...]]
 Token = typing.Union[Value, Operator, str]
 
 
-def _aggregator_to_operator(agg: typing.List[str]) -> typing.Union[str, Operator]:
-    s = ''.join(agg)
-    return OPERATORS.get(s, s)
+def _string_to_operator(agg: str) -> typing.Union[str, Operator]:
+    return OPERATORS.get(agg, agg)
 
 
 def _read_list(s: str, mode=float) -> typing.Tuple[float, ...]:
@@ -51,54 +50,54 @@ def tokens(s: str) -> typing.List[Token]:
     # Every character that could be part of an operator
     possibilities = set(''.join(OPERATORS)) - set('p')
     nums = set(string.digits)
-    curr_num: typing.List[str] = []
-    curr_op: typing.List[str] = []
+    curr_num: str = ''
+    curr_op: str = ''
     tokenlist: typing.List[Token] = []
     i = 0
     while i < len(s):
         char = s[i]
         if char in nums:
             if curr_op:
-                op = _aggregator_to_operator(curr_op)
+                op = _string_to_operator(curr_op)
                 tokenlist.append(op)
-                curr_op = []
-            curr_num.append(char)
+                curr_op = ''
+            curr_num += char
         elif char in possibilities or char in '()':
             # Things that will end up on the operators stack
             if curr_num:
-                tokenlist.append(int(''.join(curr_num)))
-                curr_num = []
+                tokenlist.append(int(curr_num))
+                curr_num = ''
             # + and - are the unary operators iff they occur at the beginning of an expression
             # or immediately after another operator
             if char in '+-' and (i == 0 or curr_op or tokenlist[-1] == '(' or isinstance(tokenlist[-1], Operator)):
                 if curr_op:
-                    tokenlist.append(_aggregator_to_operator(curr_op))
-                    curr_op = []
+                    tokenlist.append(_string_to_operator(curr_op))
+                    curr_op = ''
                 if char == '+':
-                    tokenlist.append(_aggregator_to_operator(['p']))
+                    tokenlist.append(_string_to_operator('p'))
                 else:  # char is -
-                    tokenlist.append(_aggregator_to_operator(['m']))
+                    tokenlist.append(_string_to_operator('m'))
             else:
                 if len(curr_op) == 0:
                     # This is the first time you see an operator since last
                     # time the list was cleared
-                    curr_op.append(char)
-                elif ''.join(curr_op + [char]) in OPERATORS:
+                    curr_op += char
+                elif curr_op + char in OPERATORS:
                     # This means that the current char is part of a
                     # multicharacter operation like <=
-                    curr_op.append(char)
+                    curr_op += char
                 else:
                     # Two separate operators; push out the old one and start
                     # collecting the new one
-                    op = _aggregator_to_operator(curr_op)
+                    op = _string_to_operator(curr_op)
                     tokenlist.append(op)
-                    curr_op = [char]
+                    curr_op = char
         elif char == '[':
-            if ''.join(curr_op) not in ('d', 'da', 'dc', 'dm'):
+            if curr_op not in ('d', 'da', 'dc', 'dm'):
                 raise ParseError(f"A list can only appear as the sides of a die. Error at character {i}")
             if curr_op:
-                tokenlist.append(_aggregator_to_operator(curr_op))
-                curr_op = []
+                tokenlist.append(_string_to_operator(curr_op))
+                curr_op = ''
             # Start a list of floats
             sideList = []
             begin = i
@@ -116,12 +115,12 @@ def tokens(s: str) -> typing.List[Token]:
             except ValueError:
                 raise ParseError("All elements of the side list must be numbers.")
         elif char == 'F':
-            if ''.join(curr_op) not in ('d', 'da', 'dc', 'dm'):
+            if curr_op not in ('d', 'da', 'dc', 'dm'):
                 raise ParseError("F is the 'fudge dice' value, and must appear as the side specifier of a roll. "
                                  "Error at character {}".format(i))
             if curr_op:
-                tokenlist.append(_aggregator_to_operator(curr_op))
-                curr_op = []
+                tokenlist.append(_string_to_operator(curr_op))
+                curr_op = ''
             # Fudge die
             tokenlist.append((-1, 0, 1))
         else:
@@ -133,9 +132,9 @@ def tokens(s: str) -> typing.List[Token]:
     # At most one will be occupied
     # And the only time neither will be is when the input string is empty
     if curr_num:
-        tokenlist.append(int(''.join(curr_num)))
+        tokenlist.append(int(curr_num))
     elif curr_op:
-        tokenlist.append(_aggregator_to_operator(curr_op))
+        tokenlist.append(_string_to_operator(curr_op))
     opens = tokenlist.count('(')
     closes = tokenlist.count(')')
     if opens > closes:
