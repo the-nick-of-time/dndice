@@ -1,10 +1,10 @@
 import enum
 import typing
 
-from exceptions import InputTypeError
-from operators import OPERATORS
-from tokenizer import tokens, Token
-from evaltree import EvalTree, EvalTreeNode
+from lib.exceptions import InputTypeError
+from lib.operators import OPERATORS
+from lib.tokenizer import tokens, Token
+from lib.evaltree import EvalTree, EvalTreeNode
 
 
 class Mode(enum.IntFlag):

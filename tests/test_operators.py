@@ -182,7 +182,7 @@ class TestRollFunctions(unittest.TestCase):
             i += 1
             return rands[i]
 
-        patcher = mock.patch('rolling.operators.random')
+        patcher = mock.patch('lib.operators.random')
         self.addCleanup(patcher.stop)
         self.randomMocker = patcher.start()
         self.randomMocker.randint = randint
