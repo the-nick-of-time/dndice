@@ -1,6 +1,6 @@
 import unittest
 
-from rolling import evaltree, exceptions
+from lib import evaltree, exceptions
 
 
 class TreeTester(unittest.TestCase):

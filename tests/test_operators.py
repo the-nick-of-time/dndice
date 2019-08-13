@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
 
-from rolling import exceptions, operators
+from lib import exceptions, operators
 
 
 class TestOperator(unittest.TestCase):
