@@ -1,10 +1,18 @@
 import enum
 import typing
 
-from lib.exceptions import InputTypeError
-from lib.operators import OPERATORS
-from lib.tokenizer import tokens, Token
-from lib.evaltree import EvalTree, EvalTreeNode
+try:
+    # script version
+    from lib.exceptions import InputTypeError
+    from lib.operators import OPERATORS
+    from lib.tokenizer import tokens, Token
+    from lib.evaltree import EvalTree, EvalTreeNode
+except ImportError:
+    # module version
+    from .lib.exceptions import InputTypeError
+    from .lib.operators import OPERATORS
+    from .lib.tokenizer import tokens, Token
+    from .lib.evaltree import EvalTree, EvalTreeNode
 
 
 class Mode(enum.IntFlag):
