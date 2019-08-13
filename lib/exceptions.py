@@ -5,7 +5,20 @@ class RollError(Exception):
 
 class ParseError(RollError, ValueError):
     """The roll expression was malformed as to prevent parsing into an expression tree."""
-    pass
+
+    def __init__(self, msg, offset, expr):
+        self.msg = msg
+        self.character = offset
+        self.expr = expr
+        self.indent = 4
+
+    def __str__(self):
+        fmt = "{msg}\n{indent}{expr}\n{spaces}^"
+        return fmt.format(expr=self.expr, msg=self.msg, spaces=" " * (self.character + self.indent),
+                          indent=" " * self.indent)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class EvaluationError(RollError, RuntimeError):

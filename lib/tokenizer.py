@@ -94,7 +94,7 @@ def tokens(s: str) -> typing.List[Token]:
                     curr_op = char
         elif char == '[':
             if curr_op not in ('d', 'da', 'dc', 'dm'):
-                raise ParseError(f"A list can only appear as the sides of a die. Error at character {i}")
+                raise ParseError(f"A list can only appear as the sides of a die.", i, s)
             if curr_op:
                 tokenlist.append(_string_to_operator(curr_op))
                 curr_op = ''
@@ -106,18 +106,15 @@ def tokens(s: str) -> typing.List[Token]:
                 while s[i] != ']':
                     sideList.append(s[i])
                     i += 1
-            except IndexError:
-                raise ParseError("Unterminated die side list starting at character {start}: {slice}".format(
-                    start=begin, slice=s[i - 5 if i - 5 >= 0 else 0:i + 5 if i + 5 < len(s) else len(s)]
-                ))
+            except IndexError as e:
+                raise ParseError("Unterminated die side list.", begin, s) from e
             try:
                 tokenlist.append(_read_list(''.join(sideList)))
-            except ValueError:
-                raise ParseError("All elements of the side list must be numbers.")
+            except ValueError as e:
+                raise ParseError("All elements of the side list must be numbers.", i, s) from e
         elif char == 'F':
             if curr_op not in ('d', 'da', 'dc', 'dm'):
-                raise ParseError("F is the 'fudge dice' value, and must appear as the side specifier of a roll. "
-                                 "Error at character {}".format(i))
+                raise ParseError("F is the 'fudge dice' value, and must appear as the side specifier of a roll.", i, s)
             if curr_op:
                 tokenlist.append(_string_to_operator(curr_op))
                 curr_op = ''
@@ -138,7 +135,7 @@ def tokens(s: str) -> typing.List[Token]:
     opens = tokenlist.count('(')
     closes = tokenlist.count(')')
     if opens > closes:
-        raise ParseError("Unclosed parentheses detected.")
+        raise ParseError("Unclosed parentheses detected.", s.find('('), s)
     if closes > opens:
-        raise ParseError("Unopened parentheses detected.")
+        raise ParseError("Unopened parentheses detected.", s.rfind(')'), s)
     return tokenlist
