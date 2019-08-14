@@ -10,6 +10,7 @@ Final = typing.Union[int, float]
 
 
 class EvalTreeNode:
+    """A node in the EvalTree, which can hold a value or operator."""
     __slots__ = 'payload', 'left', 'right', 'value'
 
     def __init__(self, payload: Token, left: 'EvalTreeNode' = None, right: 'EvalTreeNode' = None):
@@ -63,6 +64,15 @@ class EvalTreeNode:
 
 
 class EvalTree:
+    """An expression tree that can be used to evaluate roll expressions.
+
+    An `expression tree <https://en.wikipedia.org/wiki/Binary_expression_tree>`_ is, in short, a binary tree that holds
+    an arithmetic expression. It is important to note that the binary tree not necessarily be complete; unary operators
+    like factorial do create a tree where some leaf slots are unfilled, as they only take one operand instead of the two
+    that most operators take.
+
+    It is guaranteed that all leaf nodes hold a value (usually an integer) while all non-leaf nodes hold an operator.
+    """
     __slots__ = 'root',
 
     def __init__(self, source: typing.Union[str, typing.List[Token], 'EvalTree', None]):
@@ -98,6 +108,10 @@ class EvalTree:
     @wrap_exceptions_with(ParseError, 'Failed to construct an expression from the token list.')
     def from_tokens(self, tokens: typing.List[Token]) -> None:
         """Construct and take possession of the expression tree formed from the infix token list.
+
+        This uses a `shunting-yard algorithm <https://en.wikipedia.org/wiki/Shunting-yard_algorithm>`_ to parse the
+        infix token list into an expression tree. In relation to that algorithm, the "output" stack is populated with
+        with subtrees that are progressively joined together using operators to create the final full tree.
 
         :param tokens: The list of tokens parsed from the infix expression.
         """
@@ -175,9 +189,9 @@ class EvalTree:
         """Recurse through the tree."""
         yield current
         if current.left:
-            yield self.__pre_order_recursive(current.left)
+            yield from self.__pre_order_recursive(current.left)
         if current.right:
-            yield self.__pre_order_recursive(current.right)
+            yield from self.__pre_order_recursive(current.right)
 
     def critify(self) -> 'EvalTree':
         """Modify rolls in this expression to critical rolls.
