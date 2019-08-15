@@ -2,7 +2,7 @@
 import argparse
 import sys
 
-from rolling import verbose, basic, Mode
+from rolling import verbose, basic, Mode, compile
 
 
 def parse() -> argparse.Namespace:
@@ -45,8 +45,9 @@ def main():
 
     for expr in args.expression:
         length = 0
+        compiled = compile(expr)
         for each in range(args.number):
-            val = func(expr, mode)
+            val = func(compiled, mode)
             s = f"{val} "
             length += len(s)
             if length > args.wrap:
