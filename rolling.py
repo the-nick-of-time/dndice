@@ -95,6 +95,7 @@ def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifie
             tree.maxify()
     if modifiers != 0:
         _add_modifiers(tree, modifiers)
+    tree.evaluate()
     return tree.verbose_result()
 
 
