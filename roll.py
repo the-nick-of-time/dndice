@@ -6,7 +6,7 @@ from rolling import verbose, basic, Mode, compile
 
 
 def parse() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Perform a roll, in a syntax that is an extension of D&D's. "
+    parser = argparse.ArgumentParser(description="Perform one or many roll, in a syntax that is an extension of D&D's. "
                                                  "The most basic of this type of roll is the '1d20', just a die roll. "
                                                  "More complex may include addition or subtraction of modifiers or "
                                                  "other die rolls. All common arithmetic operations are supported so "
@@ -24,7 +24,7 @@ def parse() -> argparse.Namespace:
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='roll in verbose mode, showing the results of each dice roll')
     parser.add_argument('-w', '--wrap', default=80, type=int,
-                        help='wrap lines after this many characters. 0 for no wrapping')
+                        help='wrap lines after this many characters, 0 for no wrapping')
     parser.add_argument('expression', nargs='+',
                         help='the rolling expressions to be performed')
     return parser.parse_args(sys.argv[1:])
@@ -42,6 +42,7 @@ def main():
     func = basic
     if args.verbose:
         func = verbose
+    wrap = args.wrap
 
     for expr in args.expression:
         length = 0
@@ -49,10 +50,12 @@ def main():
         for each in range(args.number):
             val = func(compiled, mode)
             s = f"{val} "
-            length += len(s)
-            if length > args.wrap:
-                print()
-                length = len(s)
+            if wrap > 0:
+                length += len(s)
+                if length > wrap:
+                    # print a newline before to prevent from overstepping the line length restriction
+                    print()
+                    length = len(s)
             print(s, end="")
         print()
 
