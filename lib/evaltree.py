@@ -34,7 +34,7 @@ class EvalTreeNode:
         Along the way, the ``value`` of each node is set to the value of the expression at this stage, so it can be
         inspected later. This is used to great effect by the "verbose mode" of the main roll function.
 
-        What is meant by "value of the expression at this stage can be shown through a diagram: ::
+        What is meant by "value of the expression at this stage" can be shown through a diagram: ::
 
               -        < 0
             /  \
