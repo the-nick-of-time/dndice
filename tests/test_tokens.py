@@ -1,7 +1,7 @@
 import itertools
 import unittest
 
-from lib import exceptions, operators, tokenizer
+from rolling import exceptions, operators, tokenizer
 
 
 class TokenTester(unittest.TestCase):
