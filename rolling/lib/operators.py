@@ -446,11 +446,25 @@ def reroll_unconditional_on(original: Roll, target: Number) -> Roll:
 
 def reroll_unconditional_higher(original: Roll, target: Number) -> Roll:
     """Reroll and keep on rerolling when a roll is greater than the given number."""
+    try:
+        m = max(original.die)
+    except TypeError:
+        m = original.die
+    if m < target:
+        raise ArgumentValueError(f"A die with sides {original.die} can never be greater than {target}. "
+                                 "This would create an infinite loop.")
     return reroll_unconditional(original, target, lambda x, y: x > y)
 
 
 def reroll_unconditional_lower(original: Roll, target: Number) -> Roll:
     """Reroll and keep on rerolling when a roll is less than the given number."""
+    try:
+        m = min(original.die)
+    except TypeError:
+        m = original.die
+    if m > target:
+        raise ArgumentValueError(f"A die with sides {original.die} can never be less than {target}. "
+                                 "This would create an infinite loop.")
     return reroll_unconditional(original, target, lambda x, y: x < y)
 
 
