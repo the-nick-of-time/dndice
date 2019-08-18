@@ -10,6 +10,7 @@ python = "^3.6"
 
 [tool.poetry.dev-dependencies]
 nose2 = "^0.9.1"
+sphinx = "^2.1"
 
 [tool.poetry.scripts]
 roll = "rolling:roller.main"
