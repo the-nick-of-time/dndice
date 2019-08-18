@@ -111,7 +111,10 @@ class Operator:
         return False
 
     def __repr__(self):
-        return '{}:{} {}'.format(self.code, self.arity, self.precedence)
+        return '{}:{}{} {}'.format(self.code,
+                                   'l' if self.arity & Side.LEFT else '',
+                                   'r' if self.arity & Side.RIGHT else '',
+                                   self.precedence)
 
     def __str__(self):
         return self.viewAs or self.code
@@ -502,6 +505,11 @@ def factorial(number: int) -> int:
     return rv
 
 
+#: This contains all of the operators that are actually defined by this module.
+#: It is a map between the codes used to represent the operators, and the actual
+#: ``Operator`` instances that hold the functionality. Visually, it is sorted
+#: in descending order of precedence. Obviously, as dictionaries are unsorted,
+#: this doesn't actually matter.
 OPERATORS = {
     '!': Operator('!', 8, factorial, arity=Side.LEFT, cajole=Side.LEFT),
     'd': Operator('d', 7, roll_basic, cajole=Side.LEFT),

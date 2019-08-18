@@ -5,26 +5,26 @@ This module provides a few basic functions for interaction with the outside.
 
 
 
-``roll`` function
-=================
+``roll``
+--------
 
 .. autofunction:: rolling.roll
 
 
-``basic`` function
-====================
+``basic``
+---------
 
 .. autofunction:: rolling.basic
 
 
-``verbose`` function
-====================
+``verbose``
+-----------
 
 .. autofunction:: rolling.verbose
 
 
 
-``compile`` function
-====================
+``compile``
+-----------
 
 .. autofunction:: rolling.compile

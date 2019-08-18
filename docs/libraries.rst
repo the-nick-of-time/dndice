@@ -4,42 +4,49 @@ Library modules
 These libraries are mainly for internal use, but are exposed at the top level to be used elsewhere if needed.
 
 
-
 ``exceptions``
-==============
+--------------
 
 This is most likely to be used as external applications may want to catch any errors raised by this package.
 
-.. automodule:: rolling.exceptions
+.. automodule:: rolling.lib.exceptions
+    :members:
+    :show-inheritance:
 
 
 ``operators``
-=============
+-------------
 
 This module holds the operator definitions, and may be worth importing if any extensions are desired.
 
-.. automodule:: rolling.operators
+.. automodule:: rolling.lib.operators
+    :members:
+    :special-members:
 
 
 ``evaltree``
-============
+------------
 
 This module implements an expression tree for use by the algorithms in this package, and may be imported to extend build on existing functionality.
 
-.. automodule:: rolling.evaltree
+.. automodule:: rolling.lib.evaltree
+    :members:
+    :show-inheritance:
 
 
 ``helpers``
-=============
+-----------
 
 This module is for a few helpful decorators, which have probably been implemented elsewhere already.
 
-.. automodule:: rolling.helpers
+.. automodule:: rolling.lib.helpers
+    :members:
 
 
 ``tokenizer``
-=============
+-------------
 
-.. automodule:: rolling.tokenizer
+.. automodule:: rolling.lib.tokenizer
+    :members:
 
 
