@@ -1,3 +1,7 @@
+"""Split a string into a list of tokens, meaning operators or values.
+
+Only one name is useful to the outside world: ``tokens``. This is the function that actually performs the tokenization.
+"""
 import string
 import typing
 
@@ -24,22 +28,30 @@ def tokens(s: str) -> typing.List[Token]:
 
     The number and operator aggregators are initialized to be empty.
     For each character in the input string,
+
     #.  If the character is a digit, add the character to the number aggregator. If the operator aggregator is nonempty,
         build an operator from it and push that operator onto the token list, then empty the operator aggregator.
+
     #.  If the character is one of the characters that may be part of an operator:
+
         #.  If the number aggregator is nonempty, build a number from it and push that number onto the token list.
+
         #.  If the character is '+' or '-', check if it is in a place that makes it look like a sign instead of the
             arithmetic operator. In general, it is a sign if it does not have a number to its left. However, the code
             actually checks if it is preceded by nothing (the start of the string) or by an operator. If it should be
             interpreted as a sign, build the operator from the aggregator if applicable, then push the sign operator
             directly onto the token list. This leaves the operator aggregator empty.
+
         #.  If the character can be added to the current aggregator and be a valid operator, or if the aggregator is
             empty, add the character to the aggregator. This allows us to always build the longest operator in cases
             where any one character could be ambiguous like '<='. Otherwise they are two separate operators and the
             aggregator should be built before pushing the new character on.
+
     #.  If the character is '[', it is the start of a list of dice sides, which can be floats and must be numbers. Read
         until the corresponding ']' is read and convert the slice into a tuple of floats.
+
     #.  If the character is 'F', it is the fudge die (-1, 0, or 1). It also has to appear as the sides of a die.
+
     #.  If the character satisfies none of these, it is ignored. This does have the weird effect that something like
         '24zzzz5' is interpreted as the number 245. This behavior may be dealt with in future. Perhaps throw a
         ``ParseError`` on any non-whitespace character encountered.

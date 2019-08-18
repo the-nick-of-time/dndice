@@ -1,3 +1,8 @@
+"""Classes to hold and work with evaluation trees.
+
+``EvalTree`` is naturally the core class here. It provides all the functionality for looking at the tree as a unit,
+while ``EvalTreeNode`` is the basic component.
+"""
 import typing
 
 from .tokenizer import Token, tokens
@@ -36,11 +41,11 @@ class EvalTreeNode:
 
         What is meant by "value of the expression at this stage" can be shown through a diagram: ::
 
-              -        < 0
-            /  \
-          *     +      < 1
-        /  \  /  \
-        4  5  1  2     < 2
+                  -        < 0
+                /  \
+              *     +      < 1
+            /  \  /  \
+            4  5  1  2     < 2
 
         This is the tree that would result from the expression 4 * 5 - (1 + 2). If we were to start evaluating this
         tree, we would first recursively run down all three levels. Once reaching the leaves, their value is obvious:
