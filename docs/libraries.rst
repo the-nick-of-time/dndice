@@ -22,6 +22,7 @@ This module holds the operator definitions, and may be worth importing if any ex
 .. automodule:: rolling.lib.operators
     :members:
     :special-members:
+    :exclude-members: __weakref__
 
 
 ``evaltree``

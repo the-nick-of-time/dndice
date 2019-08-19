@@ -21,8 +21,9 @@ project = 'rolling'
 copyright = '2019, Nick Thurmes'
 author = 'Nick Thurmes'
 
+version = '1.2'
 # The full version, including alpha/beta/rc tags
-release = '1.2'
+release = '1.2.0'
 
 # -- General configuration ---------------------------------------------------
 

@@ -1,3 +1,5 @@
+# Rolling
+
 This package deals with roll expressions, which are inspired by the syntax D&D uses.
 At the most basic, there are expressions like `1d20` which means "roll one 20-sided die".
 D&D stops around when modifiers are added, like `1d6+2`.
@@ -6,6 +8,7 @@ You can add, subtract, multiply, even exponentiate rolls together, not to mentio
 As these are mathematical expressions just like normal ones, note that they can get arbitrarily complicated.
 The only limit is how much resources Python can bring to bear calculating your `(9^9^9^9^9)d10000` or similar ridiculous expression.  
 
+The full specification of what operators are supported and what they do is below.
 
 | Operator | Format          | Meaning
 | :------- | :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -26,7 +29,7 @@ The only limit is how much resources Python can bring to bear calculating your `
 | R< or Rl | *ROLL*__Rl__*n* | After making a roll, look at all of them and reroll any that are less than _n_ and reroll those. If a number less than _n_ comes up again, continue rerolling until you get something different.
 | t        | *ROLL*__t__*n*  | After making the roll, count the number of rolls that were at least _n_.
 | T        | *ROLL*__T__*n*  | After making the roll, count the number of rolls that were at most _n_.
-| ^        | *x*__^__*y*     | Raise _x_ to the _y_ power.
+| ^        | *x*__^__*y*     | Raise _x_ to the _y_ power. This operation is right-associative, meaning that the right side of the expression is evaluated before the left. This really only comes up when chained, for example in `2^3^2`. This would not be `(2^3)^2=8^2=64`, but rather `2^(3^2)=2^9=512`.
 | *        | *x*__*__*y*     | _x_ times _y_.
 | /        | *x*__/__*y*     | _x_ divided by _y_. This returns an unrounded number.
 | %        | *x*__%__*y*     | _x_ modulo _y_. That is, the remainder after _x_ is divided by _y_.
@@ -38,4 +41,22 @@ The only limit is how much resources Python can bring to bear calculating your `
 | <= or le | *x*__<=__*y*    | Check if _x_ is less than or equal to _y_. Returns a 1 for yes and 0 for no.
 | =        | *x*__=__*y*     | Check if _x_ is equal to _y_. Returns a 1 for yes and 0 for no.
 | &        | *x*__&__*y*     | Check if _x_ and _y_ are both nonzero.
-| \|       | *x*__\|__*y*     | Check if at least one of _x_ or _y_ is nonzero.
+| \|       | *x*__\|__*y*    | Check if at least one of _x_ or _y_ is nonzero.
+
+
+
+## Using this package
+
+### As a user or player
+
+Installing this package from PyPI will also install the script `roll` to your path. This is a simple command-line script that allows you to exercise all the powers of this package.
+For a GUI that does the same, check out my repository [DnD](https://github.com/the-nick-of-time/DnD) which is a larger project focused around D&D 5e and tracking the 
+
+
+### As a developer
+
+This entire repository can be used as a package, due to the `__init__.py` file in the root. 
+This exposes the entire useful contents of the package at the top level so you can clone this repository anywhere you want to have access.
+Of course, you could also install this as a standard python package through PyPI just like normal. 
+
+Install [poetry](https://github.com/sdispater/poetry) for dependency management. There are no runtime dependencies, and the only development dependencies are [sphinx](http://www.sphinx-doc.org/en/master/) for documentation and [nose2](https://nose2.readthedocs.io/en/latest/index.html) for testing. 
