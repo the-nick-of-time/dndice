@@ -38,7 +38,7 @@ extensions = [
 templates_path = ['_templates']
 
 # Set the master document to contents.rst to match readthedocs
-master_doc = "contents"
+master_doc = "index"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
