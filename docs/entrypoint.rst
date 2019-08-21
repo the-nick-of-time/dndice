@@ -23,8 +23,14 @@ This module provides a few basic functions for interaction with the outside.
 .. autofunction:: rolling.verbose
 
 
-
 ``compile``
 -----------
 
 .. autofunction:: rolling.compile
+
+
+``Mode``
+--------
+
+.. autoclass:: rolling.Mode
+   :members: from_string

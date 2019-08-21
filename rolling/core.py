@@ -15,18 +15,23 @@ except ImportError:
     from .lib.evaltree import EvalTree, EvalTreeNode
 
 
-class Mode(enum.IntFlag):
-    """Modifications to make to the roll expression before evaluation.
+class Mode(enum.Enum):
+    """Change the way that a roll is performed.
 
-    As a flag enum that can encode several modes at once, you want to check the state of `mode & Mode.<CONSTANT>`.
+    Average makes each die give back the average value, which ends up with halves for the normal even-sided dice.
+    Critical causes a roll to be like the damage roll of a critical hit, which means roll each die twice as many times.
+    Max makes each die give its maximum value. This isn't really used as far as I can tell.
+
+    Higher modes overwrite lower, so MAX supersedes CRIT which supersedes AVERAGE.
     """
-    NORMAL = 0b000
-    AVERAGE = 0b001
-    CRIT = 0b010
-    MAX = 0b100
+    NORMAL = 0
+    AVERAGE = 1
+    CRIT = 2
+    MAX = 3
 
     @classmethod
     def from_string(cls, string: str) -> 'Mode':
+        """Get an enum value from a string, defaulting to NORMAL."""
         encode = {
             'average': cls.AVERAGE,
             'critical': cls.CRIT,

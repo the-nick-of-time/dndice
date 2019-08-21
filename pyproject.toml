@@ -11,6 +11,7 @@ python = "^3.6"
 [tool.poetry.dev-dependencies]
 nose2 = "^0.9.1"
 sphinx = "^2.1"
+sphinx-rtd-theme = "^0.4.3"
 
 [tool.poetry.scripts]
 roll = "rolling:roller.main"

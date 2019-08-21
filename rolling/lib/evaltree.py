@@ -34,25 +34,7 @@ class EvalTreeNode:
         self.value: typing.Optional[Result] = None
 
     def evaluate(self) -> Result:
-        r"""Recursively evaluate this subtree and annotate this node with its computed value.
-
-        Along the way, the ``value`` of each node is set to the value of the expression at this stage, so it can be
-        inspected later. This is used to great effect by the "verbose mode" of the main roll function.
-
-        What is meant by "value of the expression at this stage" can be shown through a diagram: ::
-
-                  -        < 0
-                /  \
-              *     +      < 1
-            /  \  /  \
-            4  5  1  2     < 2
-
-        This is the tree that would result from the expression 4 * 5 - (1 + 2). If we were to start evaluating this
-        tree, we would first recursively run down all three levels. Once reaching the leaves, their value is obvious:
-        they are concrete already. Copy their ``payload`` into their ``value``. One level up, and we reach operators.
-        The operator nodes receive values from each of their children, perform the operation they hold, and fill their
-        ``value`` slot with the result. For instance, the '*' would perform 4 * 5 and store 20. This continues until the
-        root is reached, and the final value is returned.
+        """Recursively evaluate this subtree and annotate this node with its computed value.
 
         :return: The value computed.
         """
@@ -100,7 +82,25 @@ class EvalTree:
 
     @wrap_exceptions_with(EvaluationError, 'Failed to evaluate expression.')
     def evaluate(self) -> Final:
-        """Recursively evaluate the tree.
+        r"""Recursively evaluate the tree.
+
+        Along the way, the ``value`` of each node is set to the value of the expression at this stage, so it can be
+        inspected later. This is used to great effect by the "verbose mode" of the main roll function.
+
+        What is meant by "value of the expression at this stage" can be shown through a diagram: ::
+
+                  -        < 0
+                /  \
+              *     +      < 1
+            /  \  /  \
+            4  5  1  2     < 2
+
+        This is the tree that would result from the expression 4 * 5 - (1 + 2). If we were to start evaluating this
+        tree, we would first recursively run down all three levels. Once reaching the leaves, their value is obvious:
+        they are concrete already. Copy their ``payload`` into their ``value``. One level up, and we reach operators.
+        The operator nodes receive values from each of their children, perform the operation they hold, and fill their
+        ``value`` slot with the result. For instance, the '*' would perform 4 * 5 and store 20. This continues until the
+        root is reached, and the final value is returned.
 
         :return: The single final value from the tree.
         """
