@@ -23,9 +23,9 @@ project = 'dndice'
 copyright = '2019, Nick Thurmes'
 author = 'Nick Thurmes'
 
-version = '2.1'
+version = '2.1.0'
 # The full version, including alpha/beta/rc tags
-release = '2.1.0'
+release = '2.1.0-post'
 
 # -- General configuration ---------------------------------------------------
 
