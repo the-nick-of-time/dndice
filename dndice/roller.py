@@ -2,7 +2,7 @@
 import argparse
 import sys
 
-from rolling import verbose, basic, Mode, compile
+from dndice import verbose, basic, Mode, compile
 
 
 def parse() -> argparse.Namespace:

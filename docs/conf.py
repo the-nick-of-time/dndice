@@ -19,13 +19,13 @@ import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
 
-project = 'rolling'
+project = 'dndice'
 copyright = '2019, Nick Thurmes'
 author = 'Nick Thurmes'
 
-version = '2.0'
+version = '2.1'
 # The full version, including alpha/beta/rc tags
-release = '2.0.0'
+release = '2.1.0'
 
 # -- General configuration ---------------------------------------------------
 

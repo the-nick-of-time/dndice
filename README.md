@@ -1,5 +1,7 @@
 # Rolling
 
+[![PyPI version](https://badge.fury.io/py/dndice.svg)](https://badge.fury.io/py/dndice)
+
 This package deals with roll expressions, which are inspired by the syntax D&D uses.
 At the most basic, there are expressions like `1d20` which means "roll one 20-sided die".
 D&D stops around when modifiers are added, like `1d6+2`.
@@ -50,7 +52,7 @@ The full specification of what operators are supported and what they do is below
 ### As a user or player
 
 Installing this package from PyPI will also install the script `roll` to your path. This is a simple command-line script that allows you to exercise all the powers of this package.
-For a GUI that does the same, check out my repository [DnD](https://github.com/the-nick-of-time/DnD) which is a larger project focused around D&D 5e and tracking the 
+For a GUI that does the same, check out my repository [DnD](https://github.com/the-nick-of-time/DnD) which is a larger project focused around D&D 5e, allowing you to track your characters and monsters.
 
 
 ### As a developer

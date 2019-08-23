@@ -1,13 +1,9 @@
 import unittest
 import itertools
 
-from rolling import evaltree, exceptions, operators
-
-EvalTree = evaltree.EvalTree
-EvalTreeNode = evaltree.EvalTreeNode
-ParseError = exceptions.ParseError
-EvaluationError = exceptions.EvaluationError
-OPERATORS = operators.OPERATORS
+from dndice.lib.evaltree import EvalTreeNode, EvalTree
+from dndice.lib.exceptions import ParseError, EvaluationError
+from dndice.lib.operators import OPERATORS
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:

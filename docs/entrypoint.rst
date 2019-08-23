@@ -8,23 +8,23 @@ This module provides a few basic functions for interaction with the outside.
 ``basic``
 ---------
 
-.. autofunction:: rolling.basic
+.. autofunction:: dndice.basic
 
 
 ``verbose``
 -----------
 
-.. autofunction:: rolling.verbose
+.. autofunction:: dndice.verbose
 
 
 ``compile``
 -----------
 
-.. autofunction:: rolling.compile
+.. autofunction:: dndice.compile
 
 
 ``Mode``
 --------
 
-.. autoclass:: rolling.Mode
+.. autoclass:: dndice.Mode
    :members: from_string

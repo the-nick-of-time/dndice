@@ -1,4 +1,4 @@
-"""Tests for the rolling package.
+"""Tests for the dndice package.
 
 To run tests, use `nose <https://nose.readthedocs.io/en/latest/index.html>`_
 or its successor `nose2 <https://docs.nose2.io/en/latest/>`_

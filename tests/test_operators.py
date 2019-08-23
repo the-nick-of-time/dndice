@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
 
-from rolling import exceptions, operators
+from dndice.lib import exceptions, operators
 
 
 class TestOperator(unittest.TestCase):
@@ -182,7 +182,7 @@ class TestRollFunctions(unittest.TestCase):
             i += 1
             return rands[i]
 
-        patcher = mock.patch('rolling.operators.random')
+        patcher = mock.patch('dndice.lib.operators.random')
         self.addCleanup(patcher.stop)
         self.randomMocker = patcher.start()
         self.randomMocker.randint = randint

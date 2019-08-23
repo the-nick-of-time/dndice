@@ -9,7 +9,7 @@ These libraries are mainly for internal use, but are exposed at the top level to
 
 This is most likely to be used as external applications may want to catch any errors raised by this package.
 
-.. automodule:: rolling.lib.exceptions
+.. automodule:: dndice.lib.exceptions
     :members:
     :show-inheritance:
 
@@ -19,7 +19,7 @@ This is most likely to be used as external applications may want to catch any er
 
 This module holds the operator definitions, and may be worth importing if any extensions are desired.
 
-.. automodule:: rolling.lib.operators
+.. automodule:: dndice.lib.operators
     :members:
     :special-members:
     :exclude-members: __weakref__
@@ -30,7 +30,7 @@ This module holds the operator definitions, and may be worth importing if any ex
 
 This module implements an expression tree for use by the algorithms in this package, and may be imported to extend build on existing functionality.
 
-.. automodule:: rolling.lib.evaltree
+.. automodule:: dndice.lib.evaltree
     :members:
     :show-inheritance:
 
@@ -40,14 +40,14 @@ This module implements an expression tree for use by the algorithms in this pack
 
 This module is for a few helpful decorators, which have probably been implemented elsewhere already.
 
-.. automodule:: rolling.lib.helpers
+.. automodule:: dndice.lib.helpers
     :members:
 
 
 ``tokenizer``
 -------------
 
-.. automodule:: rolling.lib.tokenizer
+.. automodule:: dndice.lib.tokenizer
     :members:
 
 
