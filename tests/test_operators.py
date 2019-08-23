@@ -249,11 +249,15 @@ class TestRollFunctions(unittest.TestCase):
         result = operators.reroll_unconditional_higher(self.roll, 3)
         self.assertEqual(result.rolls, [1, 1, 1, 1, 2, 3])
         self.assertEqual(result.discards, [4, 4, 4, 4, 4, 4, 10, 10, 10, 10, 5, 6])
+        with self.assertRaises(exceptions.ArgumentValueError):
+            operators.reroll_unconditional_higher(self.roll, 0)
 
     def test_reroll_unconditional_lower(self):
         result = operators.reroll_unconditional_lower(self.roll, 5)
         self.assertEqual(result.rolls, [5, 6, 10, 10, 10, 10])
         self.assertEqual(result.discards, [1, 4, 4, 4, 4, 4, 2, 3, 4])
+        with self.assertRaises(exceptions.ArgumentValueError):
+            operators.reroll_unconditional_lower(self.roll, 7)
 
 
 if __name__ == '__main__':
