@@ -23,9 +23,9 @@ project = 'rolling'
 copyright = '2019, Nick Thurmes'
 author = 'Nick Thurmes'
 
-version = '1.2'
+version = '2.0'
 # The full version, including alpha/beta/rc tags
-release = '1.2.0'
+release = '2.0.0'
 
 # -- General configuration ---------------------------------------------------
 
@@ -63,6 +63,7 @@ html_static_path = ['_static']
 
 def setup(app):
     app.add_stylesheet('overrides.css')
+
 
 # -- Autodoc configuration ---------------------------------------------------
 
