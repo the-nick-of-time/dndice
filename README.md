@@ -1,6 +1,7 @@
 # Rolling
 
 [![PyPI version](https://badge.fury.io/py/dndice.svg)](https://badge.fury.io/py/dndice)
+[![Documentation Status](https://readthedocs.org/projects/rolling/badge/?version=latest)](https://rolling.readthedocs.io/en/latest/?badge=latest)
 
 This package deals with roll expressions, which are inspired by the syntax D&D uses.
 At the most basic, there are expressions like `1d20` which means "roll one 20-sided die".
