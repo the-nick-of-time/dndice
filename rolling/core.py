@@ -51,42 +51,6 @@ def _add_modifiers(tree: EvalTree, modifiers) -> EvalTree:
     return new
 
 
-# NOTE/WARNING: Modifiers being nonzero when the original roll involves anything with lower precedence
-# will produce results that are probably not as intended. The modifiers are added at the very end
-# so if you're looking at the output of boolean or comparison operators you will see more.
-def roll(expr: typing.Union[str, typing.List[Token], EvalTree], modifiers=0, option='execute') -> \
-        typing.Union[int, float, str, typing.List[Token], EvalTree]:
-    """Roll dice and do arithmetic."""
-    if isinstance(expr, (float, int)):
-        # If you're naughty and pass a number in...
-        # it really doesn't matter.
-        return expr + modifiers
-    elif expr == '':
-        return 0 + modifiers
-    elif option == 'execute':
-        return EvalTree(expr).evaluate() + modifiers
-    elif option == 'critical':
-        return EvalTree(expr).critify().evaluate() + modifiers
-    elif option == 'average':
-        return EvalTree(expr).averageify().evaluate() + modifiers
-    elif option == 'multipass':
-        return verbose(expr, modifiers=modifiers)
-    elif option == 'multipass_critical':
-        return verbose(expr, Mode.CRIT, modifiers)
-    elif option == 'compile':
-        return compile(expr, modifiers)
-    elif option == 'tokenize':
-        return tokenize(expr, modifiers)
-    elif option == 'from_tokens':
-        if isinstance(expr, list):
-            tree = EvalTree(expr + ([OPERATORS['+'], modifiers] if modifiers != 0 else []))
-            return tree.evaluate()
-        else:
-            raise TypeError("You need to actually pass tokens in")
-    elif option == 'zero':
-        return 0
-
-
 def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) -> str:
     """Roll the given expression and create a string that shows the actual values rolled alongside the final value.
 
@@ -215,11 +179,11 @@ if __name__ == '__main__':
         print('EVALUATING USING TREE DIRECTLY')
         print(tree.evaluate())
         print('EVALUATING USING ROLL FUNCTION')
-        print(roll(expr))
-        print('EVALUATING USING ROLL FUNCTION IN MULTIPASS MODE')
-        print(roll(expr, option='multipass'))
+        print(basic(expr))
+        print('EVALUATING USING ROLL FUNCTION IN VERBOSE MODE')
+        print(verbose(expr))
         print('EVALUATING USING ROLL FUNCTION AND MODIFIER')
-        print(roll(expr, 3))
-        print('EVALUATING USING ROLL FUNCTION IN MULTIPASS MODE AND MODIFIER')
-        print(roll(expr, 3, option='multipass'))
+        print(basic(expr, modifiers=3))
+        print('EVALUATING USING ROLL FUNCTION IN VERBOSE MODE AND MODIFIER')
+        print(verbose(expr, modifiers=3))
         print()
