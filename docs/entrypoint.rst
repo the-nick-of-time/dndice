@@ -5,12 +5,6 @@ This module provides a few basic functions for interaction with the outside.
 
 
 
-``roll``
---------
-
-.. autofunction:: rolling.roll
-
-
 ``basic``
 ---------
 
