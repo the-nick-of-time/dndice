@@ -63,11 +63,11 @@ def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifie
         raise InputTypeError("This function can only take a rollable string or a compiled evaluation tree.")
     tree = EvalTree(expr)
     if mode:
-        if mode & Mode.AVERAGE:
+        if mode == Mode.AVERAGE:
             tree.averageify()
-        if mode & Mode.CRIT:
+        if mode == Mode.CRIT:
             tree.critify()
-        if mode & Mode.MAX:
+        if mode == Mode.MAX:
             tree.maxify()
     if modifiers != 0:
         _add_modifiers(tree, modifiers)
@@ -106,11 +106,11 @@ def basic(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers
         raise InputTypeError("This function can only take a rollable string or a compiled evaluation tree.")
     tree = EvalTree(expr)
     if mode:
-        if mode & Mode.AVERAGE:
+        if mode == Mode.AVERAGE:
             tree.averageify()
-        if mode & Mode.CRIT:
+        if mode == Mode.CRIT:
             tree.critify()
-        if mode & Mode.MAX:
+        if mode == Mode.MAX:
             tree.maxify()
     return tree.evaluate() + modifiers
 
