@@ -21,8 +21,7 @@ This module holds the operator definitions, and may be worth importing if any ex
 
 .. automodule:: dndice.lib.operators
     :members:
-    :special-members:
-    :exclude-members: __weakref__
+    :special-members: __init__, __call__,
 
 
 ``evaltree``

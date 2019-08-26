@@ -1,7 +1,8 @@
 """Classes to hold and work with evaluation trees.
 
-``EvalTree`` is naturally the core class here. It provides all the functionality for looking at the tree as a unit,
-while ``EvalTreeNode`` is the basic component.
+``EvalTree`` is naturally the core class here. It provides all the
+functionality for looking at the tree as a unit, while ``EvalTreeNode``
+is the basic component.
 """
 import typing
 
@@ -21,12 +22,16 @@ class EvalTreeNode:
     def __init__(self, payload: Token, left: 'EvalTreeNode' = None, right: 'EvalTreeNode' = None):
         """Initialize a new node in the expression tree.
 
-        Leaf nodes (those with no left or right children) are guaranteed to hold concrete values while non-leaf nodes
-        are guaranteed to hold operators.
+        Leaf nodes (those with no left or right children) are guaranteed
+        to hold concrete values while non-leaf nodes are guaranteed to
+        hold operators.
 
-        :param payload: The operator or value that is expressed by this node.
-        :param left: The left child of this node, which holds the operand or expression to the left of this operator.
-        :param right: The right child of this node, which holds the operand or expression to the right of this operator.
+        :param payload: The operator or value that is expressed by this
+            node.
+        :param left: The left child of this node, which holds the
+            operand or expression to the left of this operator.
+        :param right: The right child of this node, which holds the
+            operand or expression to the right of this operator.
         """
         self.payload: Token = payload
         self.left: EvalTreeNode = left
@@ -34,7 +39,11 @@ class EvalTreeNode:
         self.value: typing.Optional[Result] = None
 
     def evaluate(self) -> Result:
-        """Recursively evaluate this subtree and annotate this node with its computed value.
+        """Recursively evaluate this subtree and return its computed value.
+
+        As a side effect, it also annotates this node with the value. At
+        the EvalTree level, this can be used to compose a more detailed
+        report of the dice rolls.
 
         :return: The value computed.
         """
@@ -53,19 +62,23 @@ class EvalTreeNode:
 class EvalTree:
     """An expression tree that can be used to evaluate roll expressions.
 
-    An `expression tree <https://en.wikipedia.org/wiki/Binary_expression_tree>`_ is, in short, a binary tree that holds
-    an arithmetic expression. It is important to note that the binary tree not necessarily be complete; unary operators
-    like factorial do create a tree where some leaf slots are unfilled, as they only take one operand instead of the two
-    that most operators take.
+    An `expression tree <https://en.wikipedia.org/wiki/Binary_expression_tree>`_
+    is, in short, a binary tree that holds an arithmetic expression. It
+    is important to note that the binary tree not necessarily be
+    complete; unary operators like factorial do create a tree where some
+    leaf slots are unfilled, as they only take one operand instead of
+    the two that most operators take.
 
-    It is guaranteed that all leaf nodes hold a value (usually an integer) while all non-leaf nodes hold an operator.
+    It is guaranteed that all leaf nodes hold a value (usually an
+    integer) while all non-leaf nodes hold an operator.
     """
     __slots__ = 'root',
 
     def __init__(self, source: typing.Union[str, typing.List[Token], 'EvalTree', None]):
         """Initialize a tree of EvalTreeNodes that represent a given expression.
 
-        :param source: The expression, generally as a string or already tokenized list or compiled tree.
+        :param source: The expression, generally as a string or already
+            tokenized list or compiled tree.
         """
         self.root: typing.Optional[EvalTreeNode] = None
         if isinstance(source, str):
@@ -84,10 +97,13 @@ class EvalTree:
     def evaluate(self) -> Final:
         r"""Recursively evaluate the tree.
 
-        Along the way, the ``value`` of each node is set to the value of the expression at this stage, so it can be
-        inspected later. This is used to great effect by the "verbose mode" of the main roll function.
+        Along the way, the ``value`` of each node is set to the value
+        of the expression at this stage, so it can be inspected later.
+        This is used to great effect by the "verbose mode" of the main
+        roll function.
 
-        What is meant by "value of the expression at this stage" can be shown through a diagram: ::
+        What is meant by "value of the expression at this stage" can be
+        shown through a diagram: ::
 
                   -        < 0
                 /  \
@@ -95,12 +111,16 @@ class EvalTree:
             /  \  /  \
             4  5  1  2     < 2
 
-        This is the tree that would result from the expression 4 * 5 - (1 + 2). If we were to start evaluating this
-        tree, we would first recursively run down all three levels. Once reaching the leaves, their value is obvious:
-        they are concrete already. Copy their ``payload`` into their ``value``. One level up, and we reach operators.
-        The operator nodes receive values from each of their children, perform the operation they hold, and fill their
-        ``value`` slot with the result. For instance, the '*' would perform 4 * 5 and store 20. This continues until the
-        root is reached, and the final value is returned.
+        This is the tree that would result from the expression
+        "4 * 5 - (1 + 2)". If we were to start evaluating this tree, we
+        would first recursively run down all three levels. Once reaching
+        the leaves at level 2, their value is obvious: they are concrete
+        already. Copy their ``payload`` into their ``value``. One level
+        up, and we reach operators. The operator nodes receive values
+        from each of their children, perform the operation they hold,
+        and fill their own ``value`` slot with the result. For instance,
+        the '*' would perform 4 * 5 and store 20. This continues until
+        the root is reached, and the final value is returned.
 
         :return: The single final value from the tree.
         """
@@ -112,11 +132,13 @@ class EvalTree:
 
     @wrap_exceptions_with(ParseError, 'Failed to construct an expression from the token list.')
     def from_tokens(self, tokens: typing.List[Token]) -> None:
-        """Construct and take possession of the expression tree formed from the infix token list.
+        """Construct the expression tree formed from the infix token list.
 
-        This uses a `shunting-yard algorithm <https://en.wikipedia.org/wiki/Shunting-yard_algorithm>`_ to parse the
-        infix token list into an expression tree. In relation to that algorithm, the "output" stack is populated with
-        with subtrees that are progressively joined together using operators to create the final full tree.
+        This uses a `shunting-yard algorithm <https://en.wikipedia.org/wiki/Shunting-yard_algorithm>`_
+        to parse the infix token list into an expression tree. In
+        relation to that algorithm, the "output" stack is populated with
+        with subtrees that are progressively joined together using
+        operators to create the final full tree.
 
         :param tokens: The list of tokens parsed from the infix expression.
         """
@@ -162,10 +184,12 @@ class EvalTree:
     def verbose_result(self) -> str:
         """Forms an infix expression of the result, basically looking like the original but with rolls evaluated.
 
-        Note that parentheses are discarded in the parsing step so the output may not match the input when there was
-        a parenthetical expression.
+        Note that parentheses are discarded in the parsing step so the
+        output may not match the input when there was a parenthetical
+        expression.
 
-        :return: A string representation of the result, showing the results from rolls.
+        :return: A string representation of the result, showing the
+            results from rolls.
         """
         if self.root.value is None:
             self.evaluate()

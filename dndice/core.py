@@ -18,11 +18,14 @@ except ImportError:
 class Mode(enum.Enum):
     """Change the way that a roll is performed.
 
-    Average makes each die give back the average value, which ends up with halves for the normal even-sided dice.
-    Critical causes a roll to be like the damage roll of a critical hit, which means roll each die twice as many times.
-    Max makes each die give its maximum value. This isn't really used as far as I can tell.
+    Average makes each die give back the average value, which ends up
+    with halves for the normal even-sided dice. Critical causes a roll
+    to be like the damage roll of a critical hit, which means roll each
+    die twice as many times. Max makes each die give its maximum value.
+    This isn't really used as far as I can tell.
 
-    Higher modes overwrite lower, so MAX supersedes CRIT which supersedes AVERAGE.
+    Higher modes overwrite lower, so MAX supersedes CRIT which
+    supersedes AVERAGE.
     """
     NORMAL = 0
     AVERAGE = 1
@@ -52,12 +55,15 @@ def _add_modifiers(tree: EvalTree, modifiers) -> EvalTree:
 
 
 def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) -> str:
-    """Roll the given expression and create a string that shows the actual values rolled alongside the final value.
+    """Create a string that shows the actual values rolled alongside the final value.
 
     :param expr: The rollable string or precompiled expression tree.
-    :param mode: Roll this as an average, a critical hit, or to find the maximum value.
-    :param modifiers: A number that can be added on to the expression at the very end.
-    :return: A string showing the expression with rolls evaluated alongside the final result.
+    :param mode: Roll this as an average, a critical hit, or to find the
+        maximum value.
+    :param modifiers: A number that can be added on to the expression at
+        the very end.
+    :return: A string showing the expression with rolls evaluated
+        alongside the final result.
     """
     if not isinstance(expr, (str, EvalTree)):
         raise InputTypeError("This function can only take a rollable string or a compiled evaluation tree.")
@@ -78,13 +84,17 @@ def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifie
 def compile(expr: str, modifiers=0) -> EvalTree:
     """Parse an expression into an evaluation tree to save time at later executions.
 
-    You want to use this when the particular expression is going to be used many times. For instance, for D&D, d20
-    rolls, possibly with advantage or disadvantage, are used all over. Precompiling those and referencing the compiled
-    versions is therefore very likely to be worth the extra step.
+    You want to use this when the particular expression is going to be
+    used many times. For instance, for D&D, d20 rolls, possibly with
+    advantage or disadvantage, are used all over. Precompiling those and
+    referencing the compiled versions is therefore very likely to be
+    worth the extra step.
 
     :param expr: The rollable string.
-    :param modifiers: A number that can be added on to the expression at the very end.
-    :return: An evaluation tree that can be passed to one of the roll functions or be manipulated on its own.
+    :param modifiers: A number that can be added on to the expression at
+        the very end.
+    :return: An evaluation tree that can be passed to one of the roll
+        functions or be manipulated on its own.
     """
     if not isinstance(expr, str):
         raise InputTypeError("You can only compile a string into an EvalTree.")
@@ -98,8 +108,10 @@ def basic(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers
     """Roll an expression and return just the end result.
 
     :param expr: The rollable string or precompiled expression tree.
-    :param mode: Roll this as an average, a critical hit, or to find the maximum value.
-    :param modifiers: A number that can be added on to the expression at the very end.
+    :param mode: Roll this as an average, a critical hit, or to find the
+        maximum value.
+    :param modifiers: A number that can be added on to the expression at
+        the very end.
     :return: The final number that is calculated.
     """
     if not isinstance(expr, (str, EvalTree)):
@@ -119,7 +131,8 @@ def tokenize(expr: str, modifiers=0) -> typing.List[Token]:
     """Split a string into tokens, which can be operators or numbers.
 
     :param expr: The string to be parsed.
-    :param modifiers: A value to be added on at the very end. The semantics are like (expr)+modifiers.
+    :param modifiers: A value to be added on at the very end. The
+        semantics are like (expr)+modifiers.
     :return: The list of tokens.
     """
     if not isinstance(expr, str):

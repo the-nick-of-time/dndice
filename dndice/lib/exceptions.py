@@ -1,18 +1,21 @@
-"""Exceptions to cover error cases that may be encountered by functions in this package.
+"""Exceptions to cover error cases that may be encountered in this package.
 
-A base class for all of them is ``RollError``, which means that any function ever thrown by this package can be caught
-by catching ``RollError``.
+A base class for all of them is ``RollError``, which means that any
+function ever thrown by this package can be caught by catching
+``RollError``.
 
-A ``ParseError`` is thrown when the initial expression cannot be parsed into an expression tree. Most of these errors
-occur at the initial tokenization step, but ones that are harder to catch there may be tokenized then fail to construct
-a valid tree.
+A ``ParseError`` is thrown when the initial expression cannot be parsed
+into an expression tree. Most of these errors occur at the initial
+tokenization step, but ones that are harder to catch there may be
+tokenized then fail to construct a valid tree.
 
-An ``InputTypeError`` indicate that the wrong type of element was passed into one of the main entry point functions like
-``roll``.
+An ``InputTypeError`` indicate that the wrong type of element was passed
+into one of the main entry point functions like ``roll``.
 
-An ``EvaluationError`` happen when something goes wrong while evaluating the expression tree. These can be split into
-``ArgumentTypeError`` and ``ArgumentValueError``, with the same semantics as the builtin ``TypeError`` and
-``ValueError``.
+An ``EvaluationError`` happen when something goes wrong while evaluating
+the expression tree. These can be split into ``ArgumentTypeError`` and
+``ArgumentValueError``, with the same semantics as the builtin
+``TypeError`` and ``ValueError``.
 """
 
 
@@ -24,7 +27,7 @@ class RollError(Exception):
 # This would instead inherit from SyntaxError but that produces much unwanted behavior in how the
 # traceback is constructed and printed
 class ParseError(RollError, ValueError):
-    """The roll expression was malformed as to prevent parsing into an expression tree."""
+    """The roll expression cannot be parsed into an expression tree."""
 
     def __init__(self, msg, offset=None, expr=None):
         self.msg = msg
