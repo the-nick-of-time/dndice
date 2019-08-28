@@ -13,11 +13,17 @@ def trees_equal(a: EvalTree, b: EvalTree) -> bool:
     return True
 
 
-# patch this thing in
-EvalTree.__eq__ = trees_equal
+def tree_empty(tree: EvalTree) -> bool:
+    for node in tree.pre_order():
+        if node.value is not None:
+            return False
+    return True
 
 
 class TreeTester(unittest.TestCase):
+    def setUp(self) -> None:
+        EvalTree.__eq__ = trees_equal
+
     def test_node(self):
         node = EvalTreeNode(4)
         self.assertEqual(node.payload, 4)
@@ -81,6 +87,60 @@ class TreeTester(unittest.TestCase):
                                                   EvalTreeNode(8),
                                                   EvalTreeNode(5)))
         self.assertEqual(tree, expected)
+
+    def test_tree_addition(self):
+        expr1 = '2d20'
+        tree1 = EvalTree(expr1)
+        expr2 = '5+3'
+        tree2 = EvalTree(expr2)
+        tree = tree1 + tree2
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(OPERATORS['+'],
+                                     EvalTreeNode(OPERATORS['d'],
+                                                  EvalTreeNode(2),
+                                                  EvalTreeNode(20)),
+                                     EvalTreeNode(OPERATORS['+'],
+                                                  EvalTreeNode(5),
+                                                  EvalTreeNode(3)))
+        self.assertEqual(tree, expected)
+        tree1copy = EvalTree(None)
+        tree1copy.root = EvalTreeNode(OPERATORS['d'],
+                                      EvalTreeNode(2),
+                                      EvalTreeNode(20))
+        # Ensure that the original is untouched
+        tree.evaluate()
+        self.assertEqual(tree1, tree1copy)
+        self.assertTrue(tree_empty(tree1))
+        # Also test in-place concatenation
+        tree1 += tree2
+        self.assertEqual(tree1, expected)
+
+    def test_tree_subtraction(self):
+        expr1 = '2d20'
+        tree1 = EvalTree(expr1)
+        expr2 = '5+3'
+        tree2 = EvalTree(expr2)
+        tree = tree1 - tree2
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(OPERATORS['-'],
+                                     EvalTreeNode(OPERATORS['d'],
+                                                  EvalTreeNode(2),
+                                                  EvalTreeNode(20)),
+                                     EvalTreeNode(OPERATORS['+'],
+                                                  EvalTreeNode(5),
+                                                  EvalTreeNode(3)))
+        self.assertEqual(tree, expected)
+        tree1copy = EvalTree(None)
+        tree1copy.root = EvalTreeNode(OPERATORS['d'],
+                                      EvalTreeNode(2),
+                                      EvalTreeNode(20))
+        # Ensure that the original is untouched
+        tree.evaluate()
+        self.assertEqual(tree1, tree1copy)
+        self.assertTrue(tree_empty(tree1))
+        # Also test in-place concatenation
+        tree1 -= tree2
+        self.assertEqual(tree1, expected)
 
     def test_parse_failure(self):
         expr = '4d6+2+'

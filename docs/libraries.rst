@@ -31,6 +31,7 @@ This module implements an expression tree for use by the algorithms in this pack
 
 .. automodule:: dndice.lib.evaltree
     :members:
+    :special-members:
     :show-inheritance:
 
 

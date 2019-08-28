@@ -5,6 +5,7 @@ functionality for looking at the tree as a unit, while ``EvalTreeNode``
 is the basic component.
 """
 import typing
+import copy
 
 from .tokenizer import Token, tokens
 from .exceptions import InputTypeError, EvaluationError, ParseError
@@ -92,6 +93,85 @@ class EvalTree:
             pass
         else:
             raise InputTypeError(f"You can't construct an EvalTree from type {type(source)}")
+
+    def __add__(self, other) -> 'EvalTree':
+        """Join two trees together with the addition operator.
+
+        The end result is as if you had wrapped both initial expressions
+        in parentheses and added them together, like ``(expression 1) +
+        (expression 2)``.
+
+        :param other: The EvalTree to join with this one.
+        :raises NotImplementedError: If anything but an EvalTree is passed in.
+        """
+        if isinstance(other, EvalTree):
+            return self.__concat(OPERATORS['+'], other)
+        raise NotImplementedError
+
+    def __iadd__(self, other) -> 'EvalTree':
+        """Join two trees together with the addition operator in-place.
+
+        The end result is as if you had wrapped both initial expressions
+        in parentheses and added them together, like ``(expression 1) +
+        (expression 2)``.
+
+        As this mutates the objects in-place instead of performing a
+        deep clone, it is much faster than the normal addition.
+        This comes with a **very important warning**, though: neither
+        of the inputs ends up independent of the output. If you use this
+        operator, don't use either argument to it again. Otherwise the
+        evaluation of any of the objects will pollute the others.
+
+        :param other: The EvalTree to join with this one.
+        :raises NotImplementedError: If anything but an EvalTree is passed in.
+        """
+        if isinstance(other, EvalTree):
+            return self.__in_place_concat(OPERATORS['+'], other)
+        raise NotImplementedError
+
+    def __sub__(self, other):
+        """Join two trees together with the subtraction operator.
+
+        The end result is as if you had wrapped both initial expressions
+        in parentheses and subtracted them, like ``(expression 1) -
+        (expression 2)``.
+
+        :param other: The EvalTree to join with this one.
+        :raises NotImplementedError: If anything but an EvalTree is passed in.
+        """
+        if isinstance(other, EvalTree):
+            return self.__concat(OPERATORS['-'], other)
+        raise NotImplementedError
+
+    def __isub__(self, other):
+        """Join two trees together with the subtraction operator in-place.
+
+        The end result is as if you had wrapped both initial expressions
+        in parentheses and subtracted them, like ``(expression 1) -
+        (expression 2)``.
+
+        As this mutates the objects in-place instead of performing a
+        deep clone, it is much faster than the normal subtraction.
+        This comes with a **very important warning**, though: neither
+        of the inputs ends up independent of the output. If you use this
+        operator, don't use either argument to it again. Otherwise the
+        evaluation of any of the objects will pollute the others.
+
+        :param other: The EvalTree to join with this one.
+        :raises NotImplementedError: If anything but an EvalTree is passed in.
+        """
+        if isinstance(other, EvalTree):
+            return self.__in_place_concat(OPERATORS['-'], other)
+        raise NotImplementedError
+
+    def __concat(self, operation: Operator, other: 'EvalTree') -> 'EvalTree':
+        new = self.copy()
+        new.root = EvalTreeNode(operation, new.root, other.copy().root)
+        return new
+
+    def __in_place_concat(self, operation: Operator, other: 'EvalTree') -> 'EvalTree':
+        self.root = EvalTreeNode(operation, self.root, other.root)
+        return self
 
     @wrap_exceptions_with(EvaluationError, 'Failed to evaluate expression.')
     def evaluate(self) -> Final:
@@ -269,3 +349,6 @@ class EvalTree:
             if node.payload == 'd' and node.right.payload == [1] and node.value == 20:
                 return True
         return False
+
+    def copy(self) -> 'EvalTree':
+        return copy.deepcopy(self)
