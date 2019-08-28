@@ -76,7 +76,7 @@ def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifie
         if mode == Mode.MAX:
             tree.maxify()
     if modifiers != 0:
-        _add_modifiers(tree, modifiers)
+        tree = _add_modifiers(tree, modifiers)
     tree.evaluate()
     return tree.verbose_result()
 
@@ -100,7 +100,7 @@ def compile(expr: str, modifiers=0) -> EvalTree:
         raise InputTypeError("You can only compile a string into an EvalTree.")
     tree = EvalTree(expr)
     if modifiers != 0:
-        _add_modifiers(tree, modifiers)
+        tree = _add_modifiers(tree, modifiers)
     return tree
 
 
