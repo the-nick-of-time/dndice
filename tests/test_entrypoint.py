@@ -1,9 +1,9 @@
 import itertools
 import unittest
 
-from dndice import basic, Mode, compile, tokenize
+from dndice import basic, Mode, compile, tokenize, verbose
 from dndice.lib.evaltree import EvalTree, EvalTreeNode
-from dndice.lib.operators import OPERATORS, random
+from dndice.lib.operators import OPERATORS, random, Roll
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:
@@ -24,6 +24,8 @@ class TestCoreFunctions(unittest.TestCase):
         self.assertEqual(basic('3d4', mode=Mode.MAX), 12)
         self.assertEqual(basic('3d4', mode=Mode.CRIT), 24)
         self.assertEqual(basic('3d4', modifiers=4), 16)
+        self.assertEqual(basic(2), 2)
+        self.assertEqual(basic(2, modifiers=4), 6)
 
     def test_compile(self):
         expr = '3d4'
@@ -39,9 +41,18 @@ class TestCoreFunctions(unittest.TestCase):
                                                   EvalTreeNode(4)),
                                      EvalTreeNode(2))
         self.assertEqual(compile(expr, 2), expected)
+        expected.root = EvalTreeNode(2)
+        self.assertEqual(compile(2), expected)
+        expected.root = EvalTreeNode(OPERATORS['+'],
+                                     EvalTreeNode(2),
+                                     EvalTreeNode(4))
+        self.assertEqual(compile(2, 4), expected)
 
     def test_verbose(self):
-        pass
+        expected = f'{Roll([4, 4, 4], 4)}+2 = 14'
+        self.assertEqual(verbose('3d4 + 2'), expected)
+        expected = f'{Roll([4, 4, 4], 4)}+2+1 = 15'
+        self.assertEqual(verbose('3d4 + 2', modifiers=1), expected)
 
     def test_tokenize(self):
         expr = '3d4+2'

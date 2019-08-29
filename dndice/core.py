@@ -45,16 +45,13 @@ class Mode(enum.Enum):
 
 def _add_modifiers(tree: EvalTree, modifiers) -> EvalTree:
     # Manually stick the + <modifier> onto the root of the tree so it gets evaluated at the end
-    new = EvalTree(None)
-    plus = EvalTreeNode(OPERATORS['+'])
-    number = EvalTreeNode(modifiers)
-    plus.right = number
-    new.root = plus
-    new.root.left = tree.root
-    return new
+    tree.root = EvalTreeNode(OPERATORS['+'],
+                             tree.root,
+                             EvalTreeNode(modifiers))
+    return tree
 
 
-def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) -> str:
+def verbose(expr: typing.Union[str, int, float, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) -> str:
     """Create a string that shows the actual values rolled alongside the final value.
 
     :param expr: The rollable string or precompiled expression tree.
@@ -65,8 +62,8 @@ def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifie
     :return: A string showing the expression with rolls evaluated
         alongside the final result.
     """
-    if not isinstance(expr, (str, EvalTree)):
-        raise InputTypeError("This function can only take a rollable string or a compiled evaluation tree.")
+    if not isinstance(expr, (str, int, float, EvalTree)):
+        raise InputTypeError("This function can only take a rollable string, a number, or a compiled evaluation tree.")
     tree = EvalTree(expr)
     if mode:
         if mode == Mode.AVERAGE:
@@ -76,12 +73,12 @@ def verbose(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifie
         if mode == Mode.MAX:
             tree.maxify()
     if modifiers != 0:
-        tree = _add_modifiers(tree, modifiers)
+        _add_modifiers(tree, modifiers)
     tree.evaluate()
     return tree.verbose_result()
 
 
-def compile(expr: str, modifiers=0) -> EvalTree:
+def compile(expr: typing.Union[str, int, float], modifiers=0) -> EvalTree:
     """Parse an expression into an evaluation tree to save time at later executions.
 
     You want to use this when the particular expression is going to be
@@ -96,15 +93,16 @@ def compile(expr: str, modifiers=0) -> EvalTree:
     :return: An evaluation tree that can be passed to one of the roll
         functions or be manipulated on its own.
     """
-    if not isinstance(expr, str):
-        raise InputTypeError("You can only compile a string into an EvalTree.")
+    if not isinstance(expr, (str, int, float)):
+        raise InputTypeError("You can only compile a string or a number into an EvalTree.")
     tree = EvalTree(expr)
     if modifiers != 0:
-        tree = _add_modifiers(tree, modifiers)
+        _add_modifiers(tree, modifiers)
     return tree
 
 
-def basic(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) -> typing.Union[int, float]:
+def basic(expr: typing.Union[str, int, float, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) \
+        -> typing.Union[int, float]:
     """Roll an expression and return just the end result.
 
     :param expr: The rollable string or precompiled expression tree.
@@ -114,8 +112,10 @@ def basic(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers
         the very end.
     :return: The final number that is calculated.
     """
+    if isinstance(expr, (int, float)):
+        return expr + modifiers
     if not isinstance(expr, (str, EvalTree)):
-        raise InputTypeError("This function can only take a rollable string or a compiled evaluation tree.")
+        raise InputTypeError("This function can only take a rollable string, a number, or a compiled evaluation tree.")
     tree = EvalTree(expr)
     if mode:
         if mode == Mode.AVERAGE:
@@ -127,7 +127,7 @@ def basic(expr: typing.Union[str, EvalTree], mode: Mode = Mode.NORMAL, modifiers
     return tree.evaluate() + modifiers
 
 
-def tokenize(expr: str, modifiers=0) -> typing.List[Token]:
+def tokenize(expr: typing.Union[str, int, float], modifiers=0) -> typing.List[Token]:
     """Split a string into tokens, which can be operators or numbers.
 
     :param expr: The string to be parsed.
@@ -135,8 +135,12 @@ def tokenize(expr: str, modifiers=0) -> typing.List[Token]:
         semantics are like (expr)+modifiers.
     :return: The list of tokens.
     """
+    if isinstance(expr, (int, float)):
+        if modifiers != 0:
+            return [expr, OPERATORS['+'], modifiers]
+        return [expr]
     if not isinstance(expr, str):
-        raise InputTypeError("You can only tokenize a string expression.")
+        raise InputTypeError("You can only tokenize a string expression or a number.")
     tok = tokens(expr)
     if modifiers != 0:
         tok = ['(', *tok, ')', OPERATORS['+'], modifiers]

@@ -88,6 +88,8 @@ class EvalTree:
             self.root = source.root
         elif isinstance(source, list):
             self.from_tokens(source)
+        elif isinstance(source, (int, float)):
+            self.root = EvalTreeNode(source)
         elif source is None:
             # Explicitly do nothing; leave us with an empty tree
             pass
