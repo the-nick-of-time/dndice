@@ -20,7 +20,7 @@ class EvalTreeNode:
     """A node in the EvalTree, which can hold a value or operator."""
     __slots__ = 'payload', 'left', 'right', 'value'
 
-    def __init__(self, payload: Token, left: 'EvalTreeNode' = None, right: 'EvalTreeNode' = None):
+    def __init__(self, payload: typing.Optional[Token], left: 'EvalTreeNode' = None, right: 'EvalTreeNode' = None):
         """Initialize a new node in the expression tree.
 
         Leaf nodes (those with no left or right children) are guaranteed
@@ -34,10 +34,10 @@ class EvalTreeNode:
         :param right: The right child of this node, which holds the
             operand or expression to the right of this operator.
         """
-        self.payload: Token = payload
-        self.left: EvalTreeNode = left
-        self.right: EvalTreeNode = right
-        self.value: typing.Optional[Result] = None
+        self.payload = payload  # type: Token
+        self.left = left  # type: EvalTreeNode
+        self.right = right  # type: EvalTreeNode
+        self.value = None  # type: typing.Optional[Result]
 
     def evaluate(self) -> Result:
         """Recursively evaluate this subtree and return its computed value.
@@ -75,13 +75,13 @@ class EvalTree:
     """
     __slots__ = 'root',
 
-    def __init__(self, source: typing.Union[str, typing.List[Token], 'EvalTree', None]):
+    def __init__(self, source: typing.Optional[typing.Union[str, typing.List[Token], 'EvalTree', None]]):
         """Initialize a tree of EvalTreeNodes that represent a given expression.
 
         :param source: The expression, generally as a string or already
             tokenized list or compiled tree.
         """
-        self.root: typing.Optional[EvalTreeNode] = None
+        self.root = None  # type: typing.Optional[EvalTreeNode]
         if isinstance(source, str):
             self.from_tokens(tokens(source))
         elif isinstance(source, EvalTree):
@@ -94,7 +94,7 @@ class EvalTree:
             # Explicitly do nothing; leave us with an empty tree
             pass
         else:
-            raise InputTypeError(f"You can't construct an EvalTree from type {type(source)}")
+            raise InputTypeError("You can't construct an EvalTree from type {typ}".format(typ=type(source)))
 
     def __add__(self, other) -> 'EvalTree':
         """Join two trees together with the addition operator.
@@ -224,8 +224,8 @@ class EvalTree:
 
         :param tokens: The list of tokens parsed from the infix expression.
         """
-        expression: typing.List[EvalTreeNode] = []
-        operators: typing.List[Operator] = []
+        expression = []  # type: typing.List[EvalTreeNode]
+        operators = []  # type: typing.List[Operator]
         for t in tokens:
             if isinstance(t, (int, tuple)):
                 expression.append(EvalTreeNode(t))

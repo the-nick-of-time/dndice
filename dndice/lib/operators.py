@@ -187,9 +187,9 @@ class Roll:
             get those values.
         """
         self.__disableSorting = False
-        self.rolls: typing.List[Number] = rolls or []
-        self.die: typing.Union[int, typing.Tuple[float, ...]] = die
-        self.discards = []
+        self.rolls = rolls or []  # type: typing.List[Number]
+        self.die = die  # type: typing.Union[int, typing.Tuple[float, ...]]
+        self.discards = []  # type: typing.List[Number]
 
     def __str__(self):
         rolls = ', '.join([str(item) for item in self.rolls])
@@ -499,8 +499,9 @@ def reroll_unconditional_higher(original: Roll, target: Number) -> Roll:
     except TypeError:
         min_ = 1
     if target < min_:
-        raise ArgumentValueError(f"A die with sides {original.die} can never be less than {target}. "
-                                 "This would create an infinite loop.")
+        raise ArgumentValueError("A die with sides {die} can never be less than {target}. "
+                                 "This would create an infinite loop.".format(
+            die=original.die, target=target))
     return reroll_unconditional(original, target, lambda x, y: x > y)
 
 
@@ -511,8 +512,10 @@ def reroll_unconditional_lower(original: Roll, target: Number) -> Roll:
     except TypeError:
         max_ = original.die
     if target > max_:
-        raise ArgumentValueError(f"A die with sides {original.die} can never be greater than {target}. "
-                                 "This would create an infinite loop.")
+        raise ArgumentValueError("A die with sides {die} can never be greater than {target}. "
+                                 "This would create an infinite loop.".format(
+            die=original.die, target=target
+        ))
     return reroll_unconditional(original, target, lambda x, y: x < y)
 
 

@@ -65,4 +65,3 @@ class ArgumentValueError(EvaluationError, ValueError):
 class ArgumentTypeError(EvaluationError, TypeError):
     """An expression in the roll is of the wrong type."""
     pass
-

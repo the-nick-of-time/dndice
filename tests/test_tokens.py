@@ -21,7 +21,9 @@ class TokenTester(unittest.TestCase):
             "+4": [operators.OPERATORS['p'], 4],
         }
         binary = {
-            f"1{code}4": [1, op, 4] for code, op in operators.OPERATORS.items() if op.arity == operators.Side.BOTH
+            "1" + code + "4": [1, op, 4]
+            for code, op in operators.OPERATORS.items()
+            if op.arity == operators.Side.BOTH
         }
         for s, tok in itertools.chain(unary.items(), binary.items()):
             self.assertEqual(tokenizer.tokens(s), tok)

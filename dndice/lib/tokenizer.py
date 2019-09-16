@@ -79,9 +79,9 @@ def tokens(s: str) -> typing.List[Token]:
     # Every character that could be part of an operator
     possibilities = set(''.join(OPERATORS)) - set('p')
     nums = set(string.digits)
-    curr_num: str = ''
-    curr_op: str = ''
-    tokenlist: typing.List[Token] = []
+    curr_num = ''
+    curr_op = ''
+    tokenlist = []
     i = 0
     while i < len(s):
         char = s[i]
@@ -123,7 +123,7 @@ def tokens(s: str) -> typing.List[Token]:
                     curr_op = char
         elif char == '[':
             if curr_op not in ('d', 'da', 'dc', 'dm'):
-                raise ParseError(f"A list can only appear as the sides of a die.", i, s)
+                raise ParseError("A list can only appear as the sides of a die.", i, s)
             if curr_op:
                 tokenlist.append(_string_to_operator(curr_op))
                 curr_op = ''

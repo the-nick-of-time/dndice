@@ -7,7 +7,7 @@ license = "GPL-2.0-or-later"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.5"
 
 [tool.poetry.dev-dependencies]
 nose2 = "^0.9.1"

@@ -49,9 +49,9 @@ class TestCoreFunctions(unittest.TestCase):
         self.assertEqual(compile(2, 4), expected)
 
     def test_verbose(self):
-        expected = f'{Roll([4, 4, 4], 4)}+2 = 14'
+        expected = '{roll}+2 = 14'.format(roll=Roll([4, 4, 4], 4))
         self.assertEqual(verbose('3d4 + 2'), expected)
-        expected = f'{Roll([4, 4, 4], 4)}+2+1 = 15'
+        expected = '{roll}+2+1 = 15'.format(roll=Roll([4, 4, 4], 4))
         self.assertEqual(verbose('3d4 + 2', modifiers=1), expected)
 
     def test_tokenize(self):

@@ -49,7 +49,7 @@ def main():
         compiled = compile(expr)
         for each in range(args.number):
             val = func(compiled, mode)
-            s = f"{val} "
+            s = "{} ".format(val)
             if wrap > 0:
                 length += len(s)
                 if length > wrap:
