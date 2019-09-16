@@ -25,7 +25,7 @@ from .helpers import check_simple_types, wrap_exceptions_with
 Number = typing.Union[int, float]
 
 
-class Side(enum.IntFlag):
+class Side(enum.IntEnum):
     """Represents which side an operation is applicable to.
 
     Note that checking if an operation includes one side is as simple as
@@ -501,7 +501,8 @@ def reroll_unconditional_higher(original: Roll, target: Number) -> Roll:
     if target < min_:
         raise ArgumentValueError("A die with sides {die} can never be less than {target}. "
                                  "This would create an infinite loop.".format(
-            die=original.die, target=target))
+            die=original.die, target=target
+        ))
     return reroll_unconditional(original, target, lambda x, y: x > y)
 
 
