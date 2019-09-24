@@ -3,7 +3,7 @@ import itertools
 
 from dndice.lib.evaltree import EvalTreeNode, EvalTree
 from dndice.lib.exceptions import ParseError, EvaluationError
-from dndice.lib.operators import OPERATORS, Roll
+from dndice.lib.operators import OPERATORS, Roll, random
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:
@@ -23,6 +23,17 @@ def tree_empty(tree: EvalTree) -> bool:
 class TreeTester(unittest.TestCase):
     def setUp(self) -> None:
         EvalTree.__eq__ = trees_equal
+        i = -1
+        rands = [1, 20, 1, 20, 1, 20]
+
+        def mock_randint(start, end):
+            nonlocal i
+            i += 1
+            if i < len(rands):
+                return rands[i]
+            return 4
+
+        random.randint = mock_randint
 
     def test_node(self):
         node = EvalTreeNode(4)
@@ -189,26 +200,24 @@ class TreeTester(unittest.TestCase):
         self.assertEqual(tree.root.right.payload, OPERATORS['da'])
 
     def test_is_critical(self):
-        root = EvalTreeNode(OPERATORS['d'],
-                            EvalTreeNode(1),
-                            EvalTreeNode(OPERATORS['d'],
-                                         EvalTreeNode(4),
-                                         EvalTreeNode(20)))
-        tree = EvalTree(None)
-        tree.root = root
-        tree.root.right.value = Roll([20], 20)
+        tree = EvalTree('2d20h1')
+        tree.evaluate()
         self.assertTrue(tree.is_critical())
+        self.assertFalse(tree.is_fail())
+        tree = EvalTree('10d20h5l2')
+        tree.evaluate()
+        self.assertFalse(tree.is_critical())
+        self.assertFalse(tree.is_fail())
 
     def test_is_fail(self):
-        root = EvalTreeNode(OPERATORS['d'],
-                            EvalTreeNode(1),
-                            EvalTreeNode(OPERATORS['d'],
-                                         EvalTreeNode(4),
-                                         EvalTreeNode(20)))
-        tree = EvalTree(None)
-        tree.root = root
-        tree.root.right.value = Roll([1], 20)
+        tree = EvalTree('2d20l1')
+        tree.evaluate()
         self.assertTrue(tree.is_fail())
+        self.assertFalse(tree.is_critical())
+        tree = EvalTree('1d20 + 1d20')
+        tree.evaluate()
+        self.assertTrue(tree.is_fail())
+        self.assertTrue(tree.is_critical())
 
     def test_copy(self):
         root = EvalTreeNode(OPERATORS['d'],

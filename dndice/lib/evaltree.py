@@ -14,6 +14,7 @@ from .operators import OPERATORS, Roll, Operator, Side
 
 Result = typing.Union[Roll, int, float]
 Final = typing.Union[int, float]
+Predicate = typing.Callable[['EvalTreeNode'], bool]
 
 
 class EvalTreeNode:
@@ -292,17 +293,22 @@ class EvalTree:
                 + str(current.payload)
                 + self.__verbose_result_recursive(current.right, threshold))
 
-    def pre_order(self) -> typing.Generator[EvalTreeNode, None, None]:
+    def pre_order(self, abort=None) -> typing.Generator[EvalTreeNode, None, None]:
         """Perform a pre-order/breadth-first traversal of the tree."""
-        return self.__pre_order_recursive(self.root)
+        if abort is not None:
+            return self.__pre_order_recursive(self.root, abort)
+        else:
+            return self.__pre_order_recursive(self.root, lambda node: False)
 
-    def __pre_order_recursive(self, current: EvalTreeNode) -> typing.Generator[EvalTreeNode, None, None]:
+    def __pre_order_recursive(self, current: EvalTreeNode, abort: Predicate) -> typing.Generator[
+        EvalTreeNode, None, None]:
         """Recurse through the tree."""
         yield current
-        if current.left:
-            yield from self.__pre_order_recursive(current.left)
-        if current.right:
-            yield from self.__pre_order_recursive(current.right)
+        if not abort(current):
+            if current.left:
+                yield from self.__pre_order_recursive(current.left, abort)
+            if current.right:
+                yield from self.__pre_order_recursive(current.right, abort)
 
     def critify(self) -> 'EvalTree':
         """Modify rolls in this expression to critical rolls.
@@ -340,14 +346,14 @@ class EvalTree:
 
     def is_critical(self) -> bool:
         """Checks if this roll contains a d20 roll that is a natural 20."""
-        for node in self.pre_order():
+        for node in self.pre_order(lambda node: isinstance(node.value, Roll) and node.value.die == 20):
             if isinstance(node.value, Roll) and node.value.die == 20 and 20 in node.value:
                 return True
         return False
 
     def is_fail(self) -> bool:
         """Checks if this roll contains a d20 roll that is a natural 1."""
-        for node in self.pre_order():
+        for node in self.pre_order(lambda node: isinstance(node.value, Roll) and node.value.die == 20):
             if isinstance(node.value, Roll) and node.value.die == 20 and 1 in node.value:
                 return True
         return False
