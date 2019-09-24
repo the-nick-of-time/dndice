@@ -341,14 +341,14 @@ class EvalTree:
     def is_critical(self) -> bool:
         """Checks if this roll contains a d20 roll that is a natural 20."""
         for node in self.pre_order():
-            if node.payload == 'd' and node.right.payload == [20] and node.value == 20:
+            if isinstance(node.value, Roll) and node.value.die == 20 and 20 in node.value:
                 return True
         return False
 
     def is_fail(self) -> bool:
         """Checks if this roll contains a d20 roll that is a natural 1."""
         for node in self.pre_order():
-            if node.payload == 'd' and node.right.payload == [1] and node.value == 20:
+            if isinstance(node.value, Roll) and node.value.die == 20 and 1 in node.value:
                 return True
         return False
 
