@@ -3,7 +3,7 @@ import itertools
 
 from dndice.lib.evaltree import EvalTreeNode, EvalTree
 from dndice.lib.exceptions import ParseError, EvaluationError
-from dndice.lib.operators import OPERATORS
+from dndice.lib.operators import OPERATORS, Roll, random
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:
@@ -23,6 +23,17 @@ def tree_empty(tree: EvalTree) -> bool:
 class TreeTester(unittest.TestCase):
     def setUp(self) -> None:
         EvalTree.__eq__ = trees_equal
+        i = -1
+        rands = [1, 20, 1, 20, 1, 20]
+
+        def mock_randint(start, end):
+            nonlocal i
+            i += 1
+            if i < len(rands):
+                return rands[i]
+            return 4
+
+        random.randint = mock_randint
 
     def test_node(self):
         node = EvalTreeNode(4)
@@ -151,6 +162,82 @@ class TreeTester(unittest.TestCase):
         expr = '2d20h(7/2)'
         with self.assertRaises(EvaluationError):
             EvalTree(expr).evaluate()
+
+    def test_critify(self):
+        root = EvalTreeNode(OPERATORS['d'],
+                            EvalTreeNode(1),
+                            EvalTreeNode(OPERATORS['d'],
+                                         EvalTreeNode(4),
+                                         EvalTreeNode(20)))
+        tree = EvalTree(None)
+        tree.root = root
+        tree.critify()
+        self.assertEqual(tree.root.payload, OPERATORS['dc'])
+        self.assertEqual(tree.root.right.payload, OPERATORS['dc'])
+
+    def test_maxify(self):
+        root = EvalTreeNode(OPERATORS['d'],
+                            EvalTreeNode(1),
+                            EvalTreeNode(OPERATORS['d'],
+                                         EvalTreeNode(4),
+                                         EvalTreeNode(20)))
+        tree = EvalTree(None)
+        tree.root = root
+        tree.maxify()
+        self.assertEqual(tree.root.payload, OPERATORS['dm'])
+        self.assertEqual(tree.root.right.payload, OPERATORS['dm'])
+
+    def test_averageify(self):
+        root = EvalTreeNode(OPERATORS['d'],
+                            EvalTreeNode(1),
+                            EvalTreeNode(OPERATORS['d'],
+                                         EvalTreeNode(4),
+                                         EvalTreeNode(20)))
+        tree = EvalTree(None)
+        tree.root = root
+        tree.averageify()
+        self.assertEqual(tree.root.payload, OPERATORS['da'])
+        self.assertEqual(tree.root.right.payload, OPERATORS['da'])
+
+    def test_is_critical(self):
+        tree = EvalTree('2d20h1')
+        tree.evaluate()
+        self.assertTrue(tree.is_critical())
+        self.assertFalse(tree.is_fail())
+        tree = EvalTree('10d20h5l2')
+        tree.evaluate()
+        self.assertFalse(tree.is_critical())
+        self.assertFalse(tree.is_fail())
+
+    def test_is_fail(self):
+        tree = EvalTree('2d20l1')
+        tree.evaluate()
+        self.assertTrue(tree.is_fail())
+        self.assertFalse(tree.is_critical())
+        tree = EvalTree('1d20 + 1d20')
+        tree.evaluate()
+        self.assertTrue(tree.is_fail())
+        self.assertTrue(tree.is_critical())
+
+    def test_copy(self):
+        root = EvalTreeNode(OPERATORS['d'],
+                            EvalTreeNode(1),
+                            EvalTreeNode(OPERATORS['d'],
+                                         EvalTreeNode(4),
+                                         EvalTreeNode(20)))
+        tree = EvalTree(None)
+        tree.root = root
+        tree.evaluate()
+        copy = tree.copy()
+        self.assertEqual(tree, copy)
+        self.assertIsNot(tree, copy)
+        for origNode, copyNode in zip(tree.pre_order(), copy.pre_order()):
+            self.assertIsNot(origNode, copyNode)
+            # Avoid false positives from int interning
+            if not isinstance(origNode.value, int):
+                self.assertIsNot(origNode.value, copyNode.value)
+            if not isinstance(origNode.payload, int):
+                self.assertIsNot(origNode.payload, copyNode.payload)
 
 
 if __name__ == '__main__':
