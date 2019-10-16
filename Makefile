@@ -1,3 +1,5 @@
+.PHONY: docs test coverage
+
 build: docs test
 	poetry build
 
