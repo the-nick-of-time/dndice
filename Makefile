@@ -14,3 +14,6 @@ coverage:
 	coverage run venv/bin/nose2 --verbose
 	coverage report
 	coverage html
+
+compatibility:
+	docker build -t dndice_compat . && docker run --rm --name rolling_test dndice_compat
