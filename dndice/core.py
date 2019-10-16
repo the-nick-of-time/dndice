@@ -1,13 +1,13 @@
 import enum
 import typing
 
-try:
+if __name__ == '__main__':
     # script version
     from lib.exceptions import InputTypeError
     from lib.operators import OPERATORS
     from lib.tokenizer import tokens, Token
     from lib.evaltree import EvalTree, EvalTreeNode
-except ImportError:
+else:
     # module version
     from .lib.exceptions import InputTypeError
     from .lib.operators import OPERATORS

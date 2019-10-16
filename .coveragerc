@@ -1,0 +1,14 @@
+[report]
+exclude_lines =
+    # Ellipses as the whole line like in typing overloads
+    \.\.\.$
+    def __repr__
+    if __name__ == ["']__main__['"]
+
+
+[run]
+source =
+    dndice
+
+omit =
+    dndice/roller.py

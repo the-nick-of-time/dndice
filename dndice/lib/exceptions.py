@@ -24,8 +24,8 @@ class RollError(Exception):
     pass
 
 
-# This would instead inherit from SyntaxError but that produces much unwanted behavior in how the
-# traceback is constructed and printed
+# This would instead inherit from SyntaxError but that produces much
+# unwanted behavior in how the traceback is constructed and printed
 class ParseError(RollError, ValueError):
     """The roll expression cannot be parsed into an expression tree."""
 
@@ -36,9 +36,9 @@ class ParseError(RollError, ValueError):
         self.indent = 4
 
     def __str__(self):
-        if self.character and self.expr:
-            fmt = "{msg}\n{indent}{expr}\n{spaces}^"
-            return fmt.format(expr=self.expr, msg=self.msg, spaces=" " * (self.character + self.indent),
+        if self.character is not None and self.expr is not None:
+            fmt = "{msg}\n{indent}{expr}\n{indent}{spaces}^"
+            return fmt.format(expr=self.expr, msg=self.msg, spaces=" " * self.character,
                               indent=" " * self.indent)
         else:
             return self.msg
