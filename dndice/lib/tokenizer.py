@@ -76,6 +76,13 @@ def tokens(s: str) -> typing.List[Token]:
     :param s: The expression to be parsed
     :return: A list of tokens
     """
+    # Check for unbalanced parentheses
+    opens = s.count('(')
+    closes = s.count(')')
+    if opens > closes:
+        raise ParseError("Unclosed parenthesis detected.", s.find('('), s)
+    if closes > opens:
+        raise ParseError("Unopened parenthesis detected.", s.rfind(')'), s)
     # Every character that could be part of an operator
     possibilities = set(''.join(OPERATORS)) - set('p')
     nums = set(string.digits)
@@ -143,7 +150,8 @@ def tokens(s: str) -> typing.List[Token]:
                 raise ParseError("All elements of the side list must be numbers.", i, s) from e
         elif char == 'F':
             if curr_op not in ('d', 'da', 'dc', 'dm'):
-                raise ParseError("F is the 'fudge dice' value, and must appear as the side specifier of a roll.", i, s)
+                raise ParseError("F is the 'fudge dice' value, and must appear as the side "
+                                 "specifier of a roll.", i, s)
             if curr_op:
                 tokenlist.append(_string_to_operator(curr_op))
                 curr_op = ''
@@ -161,10 +169,4 @@ def tokens(s: str) -> typing.List[Token]:
         tokenlist.append(int(curr_num))
     elif curr_op:
         tokenlist.append(_string_to_operator(curr_op))
-    opens = tokenlist.count('(')
-    closes = tokenlist.count(')')
-    if opens > closes:
-        raise ParseError("Unclosed parentheses detected.", s.find('('), s)
-    if closes > opens:
-        raise ParseError("Unopened parentheses detected.", s.rfind(')'), s)
     return tokenlist
