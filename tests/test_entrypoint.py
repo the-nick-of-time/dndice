@@ -7,7 +7,8 @@ from dndice.lib.operators import OPERATORS, random, Roll
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:
-    for nodeA, nodeB in itertools.zip_longest(a.pre_order(), b.pre_order(), fillvalue=EvalTreeNode(None)):
+    for nodeA, nodeB in itertools.zip_longest(a.pre_order(), b.pre_order(),
+                                              fillvalue=EvalTreeNode(None)):
         if nodeA.payload != nodeB.payload:
             return False
     return True

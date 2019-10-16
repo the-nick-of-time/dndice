@@ -1,10 +1,13 @@
+SOURCES=$(wildcard dndice/*.py) $(wildcard dndice/lib/*.py)
+
+
 build: docs test
 	poetry build
 
 publish: build
 	poetry publish
 
-docs:
+docs: $(SOURCES)
 	sphinx-build -b html "docs" "docs/_build/html"
 
 test:

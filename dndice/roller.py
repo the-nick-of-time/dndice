@@ -6,11 +6,12 @@ from dndice import verbose, basic, Mode, compile
 
 
 def parse() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Perform one or many roll, in a syntax that is an extension of D&D's. "
-                                                 "The most basic of this type of roll is the '1d20', just a die roll. "
-                                                 "More complex may include addition or subtraction of modifiers or "
-                                                 "other die rolls. All common arithmetic operations are supported so "
-                                                 "knock yourself out.")
+    parser = argparse.ArgumentParser(
+        description="Perform one or many roll, in a syntax that is an extension of D&D's. "
+                    "The most basic of this type of roll is the '1d20', just a die roll. "
+                    "More complex may include addition or subtraction of modifiers or "
+                    "other die rolls. All common arithmetic operations are supported so "
+                    "knock yourself out.")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('-a', '--average', action='store_true',
                       help='calculate the average of the given roll')
@@ -53,7 +54,8 @@ def main():
             if wrap > 0:
                 length += len(s)
                 if length > wrap:
-                    # print a newline before to prevent from overstepping the line length restriction
+                    # print a newline before to prevent from
+                    # overstepping the line length restriction
                     print()
                     length = len(s)
             print(s, end="")

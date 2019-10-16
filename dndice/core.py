@@ -51,7 +51,8 @@ def _add_modifiers(tree: EvalTree, modifiers) -> EvalTree:
     return tree
 
 
-def verbose(expr: typing.Union[str, int, float, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) -> str:
+def verbose(expr: typing.Union[str, int, float, EvalTree], mode: Mode = Mode.NORMAL,
+            modifiers=0) -> str:
     """Create a string that shows the actual values rolled alongside the final value.
 
     :param expr: The rollable string or precompiled expression tree.
@@ -63,7 +64,8 @@ def verbose(expr: typing.Union[str, int, float, EvalTree], mode: Mode = Mode.NOR
         alongside the final result.
     """
     if not isinstance(expr, (str, int, float, EvalTree)):
-        raise InputTypeError("This function can only take a rollable string, a number, or a compiled evaluation tree.")
+        raise InputTypeError("This function can only take a rollable string, a number, or a "
+                             "compiled evaluation tree.")
     tree = EvalTree(expr)
     if mode:
         if mode == Mode.AVERAGE:
@@ -101,8 +103,8 @@ def compile(expr: typing.Union[str, int, float], modifiers=0) -> EvalTree:
     return tree
 
 
-def basic(expr: typing.Union[str, int, float, EvalTree], mode: Mode = Mode.NORMAL, modifiers=0) \
-        -> typing.Union[int, float]:
+def basic(expr: typing.Union[str, int, float, EvalTree], mode: Mode = Mode.NORMAL,
+          modifiers=0) -> typing.Union[int, float]:
     """Roll an expression and return just the end result.
 
     :param expr: The rollable string or precompiled expression tree.
@@ -115,7 +117,8 @@ def basic(expr: typing.Union[str, int, float, EvalTree], mode: Mode = Mode.NORMA
     if isinstance(expr, (int, float)):
         return expr + modifiers
     if not isinstance(expr, (str, EvalTree)):
-        raise InputTypeError("This function can only take a rollable string, a number, or a compiled evaluation tree.")
+        raise InputTypeError("This function can only take a rollable string, a number, or a "
+                             "compiled evaluation tree.")
     tree = EvalTree(expr)
     if mode:
         if mode == Mode.AVERAGE:

@@ -105,7 +105,8 @@ def tokens(s: str) -> typing.List[Token]:
                 curr_num = ''
             # + and - are the unary operators iff they occur at the beginning of an expression
             # or immediately after another operator
-            if char in '+-' and (i == 0 or curr_op or tokenlist[-1] == '(' or isinstance(tokenlist[-1], Operator)):
+            if char in '+-' and (i == 0 or curr_op or tokenlist[-1] == '('
+                                 or isinstance(tokenlist[-1], Operator)):
                 if curr_op:
                     tokenlist.append(_string_to_operator(curr_op))
                     curr_op = ''

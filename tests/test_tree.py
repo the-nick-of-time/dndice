@@ -1,13 +1,14 @@
-import unittest
 import itertools
+import unittest
 
 from dndice.lib.evaltree import EvalTreeNode, EvalTree
 from dndice.lib.exceptions import ParseError, EvaluationError
-from dndice.lib.operators import OPERATORS, Roll, random
+from dndice.lib.operators import OPERATORS, random
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:
-    for nodeA, nodeB in itertools.zip_longest(a.pre_order(), b.pre_order(), fillvalue=EvalTreeNode(None)):
+    for nodeA, nodeB in itertools.zip_longest(a.pre_order(), b.pre_order(),
+                                              fillvalue=EvalTreeNode(None)):
         if nodeA.payload != nodeB.payload:
             return False
     return True

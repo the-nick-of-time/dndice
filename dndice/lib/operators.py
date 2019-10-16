@@ -51,7 +51,8 @@ class Operator:
     ``True`` for ``addition == '+'``.
     """
 
-    def __init__(self, code: str, precedence: int, func: typing.Callable, arity: Side = Side.BOTH,
+    def __init__(self, code: str, precedence: int, func: typing.Callable,
+                 arity: Side = Side.BOTH,
                  associativity: Side = Side.LEFT, cajole: Side = Side.BOTH, viewAs: str = None):
         """Create a new operator.
 
@@ -279,7 +280,8 @@ class Roll:
             self.discards.extend(self.rolls[index])
             start, stop, step = index.indices(len(self.rolls))
             if stop - start != len(new):
-                raise ArgumentValueError('You have to replace a slice with the same number of items.')
+                raise ArgumentValueError('You have to replace a slice with the same number of '
+                                         'items.')
         else:
             raise ArgumentTypeError('You can only index with an int or a slice.')
         self.rolls[index] = new
@@ -356,7 +358,10 @@ def take_high(roll: Roll, number: int) -> Roll:
     return copy
 
 
-def roll_basic(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
+Sides = typing.Union[int, typing.Tuple[float, ...], Roll]
+
+
+def roll_basic(number: int, sides: Sides) -> Roll:
     """Roll a single set of dice.
 
     :param number: The number of dice to be rolled.
@@ -364,14 +369,10 @@ def roll_basic(number: int, sides: typing.Union[int, typing.Tuple[float, ...], R
         of side values, pick one from there.
     :return: A ``Roll`` holding all the dice rolls.
     """
-    # Returns a sorted (ascending) list of all the numbers rolled
-    rolls = []
-    for all in range(number):
-        rolls.append(single_die(sides))
-    return Roll(rolls, sides)
+    return Roll([single_die(sides) for _ in range(number)], sides)
 
 
-def single_die(sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Number:
+def single_die(sides: Sides) -> Number:
     """Roll a single die.
 
     The behavior is different based on what gets passed in. Given an
@@ -396,19 +397,18 @@ def single_die(sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Numb
     raise ArgumentTypeError("You can't roll a die with sides: {sides}".format(sides=sides))
 
 
-def roll_critical(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
+def roll_critical(number: int, sides: Sides) -> Roll:
     """Roll double the normal number of dice."""
-    # Returns a sorted (ascending) list of all the numbers rolled
     rolls = [single_die(sides) for _ in range(2 * number)]
     return Roll(rolls, sides)
 
 
-def roll_max(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
+def roll_max(number: int, sides: Sides) -> Roll:
     """Roll a maximum value on every die."""
-    # Returns a sorted (ascending) list of all the numbers rolled
     rolls = []
     if isinstance(sides, (tuple, Roll)):
-        # For rolls, this does go by the highest value that got rolled rather than that die's sides
+        # For rolls, this does go by the highest value that got rolled
+        # rather than that die's sides
         rolls.extend([max(sides)] * number)
     elif isinstance(sides, (int, float)):
         rolls.extend([sides] * number)
@@ -417,7 +417,7 @@ def roll_max(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Rol
     return Roll(rolls, sides)
 
 
-def roll_average(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
+def roll_average(number: int, sides: Sides) -> Roll:
     """Roll an average value on every die.
 
     On most dice this will have a .5 in the result.
@@ -432,7 +432,8 @@ def roll_average(number: int, sides: typing.Union[int, typing.Tuple[float, ...],
     return Roll(rolls, sides)
 
 
-def reroll_once(original: Roll, target: Number, comp: typing.Callable[[Number, Number], bool]) -> Roll:
+def reroll_once(original: Roll, target: Number,
+                comp: typing.Callable[[Number, Number], bool]) -> Roll:
     """Take the roll and reroll values that meet the comparison, taking the new result.
 
     :param original: The set of rolls to inspect.
@@ -452,8 +453,9 @@ def reroll_once(original: Roll, target: Number, comp: typing.Callable[[Number, N
     return modified
 
 
-def reroll_unconditional(original: Roll, target: Number, comp: typing.Callable[[Number, Number], bool]):
-    """Take the roll and reroll values that meet the comparison, and keep on rerolling until they don't.
+def reroll_unconditional(original: Roll, target: Number,
+                         comp: typing.Callable[[Number, Number], bool]) -> Roll:
+    """Reroll values that meet the comparison, and keep on rerolling until they don't.
 
     :param original: The set of rolls to inspect.
     :param target: The target to compare against.
@@ -500,9 +502,8 @@ def reroll_unconditional_higher(original: Roll, target: Number) -> Roll:
         min_ = 1
     if target < min_:
         raise ArgumentValueError("A die with sides {die} can never be less than {target}. "
-                                 "This would create an infinite loop.".format(
-            die=original.die, target=target
-        ))
+                                 "This would create an infinite loop.".format(die=original.die,
+                                                                              target=target))
     return reroll_unconditional(original, target, lambda x, y: x > y)
 
 
@@ -514,9 +515,8 @@ def reroll_unconditional_lower(original: Roll, target: Number) -> Roll:
         max_ = original.die
     if target > max_:
         raise ArgumentValueError("A die with sides {die} can never be greater than {target}. "
-                                 "This would create an infinite loop.".format(
-            die=original.die, target=target
-        ))
+                                 "This would create an infinite loop.".format(die=original.die,
+                                                                              target=target))
     return reroll_unconditional(original, target, lambda x, y: x < y)
 
 
