@@ -405,13 +405,11 @@ def roll_critical(number: int, sides: typing.Union[int, typing.Tuple[float, ...]
 
 def roll_max(number: int, sides: typing.Union[int, typing.Tuple[float, ...], Roll]) -> Roll:
     """Roll a maximum value on every die."""
-    # Returns a sorted (ascending) list of all the numbers rolled
-    rolls = []
     if isinstance(sides, (tuple, Roll)):
         # For rolls, this does go by the highest value that got rolled rather than that die's sides
-        rolls.extend([max(sides)] * number)
+        rolls = [max(sides)] * number
     elif isinstance(sides, (int, float)):
-        rolls.extend([sides] * number)
+        rolls = [sides] * number
     else:
         raise ArgumentTypeError("roll_max can't be called with a {}-sided die", type(sides))
     return Roll(rolls, sides)
@@ -422,11 +420,10 @@ def roll_average(number: int, sides: typing.Union[int, typing.Tuple[float, ...],
 
     On most dice this will have a .5 in the result.
     """
-    rolls = []
     if isinstance(sides, (tuple, Roll)):
-        rolls.extend([sum(sides) / len(sides)] * number)
+        rolls = [sum(sides) / len(sides)] * number
     elif isinstance(sides, int):
-        rolls.extend([(sides + 1) / 2] * number)
+        rolls = [(sides + 1) / 2] * number
     else:
         raise ArgumentTypeError("roll_average can't be called with a {}-sided die", type(sides))
     return Roll(rolls, sides)

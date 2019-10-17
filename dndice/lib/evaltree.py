@@ -109,7 +109,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__concat(OPERATORS['+'], other)
-        raise NotImplementedError
+        raise InputTypeError(f'Cannot add a {type(other)} to an EvalTree.')
 
     def __iadd__(self, other) -> 'EvalTree':
         """Join two trees together with the addition operator in-place.
@@ -130,7 +130,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__in_place_concat(OPERATORS['+'], other)
-        raise NotImplementedError
+        raise InputTypeError(f'Cannot add a {type(other)} to an EvalTree.')
 
     def __sub__(self, other):
         """Join two trees together with the subtraction operator.
@@ -144,7 +144,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__concat(OPERATORS['-'], other)
-        raise NotImplementedError
+        raise InputTypeError(f'Cannot subtract a {type(other)} from an EvalTree.')
 
     def __isub__(self, other):
         """Join two trees together with the subtraction operator in-place.
@@ -165,7 +165,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__in_place_concat(OPERATORS['-'], other)
-        raise NotImplementedError
+        raise InputTypeError(f'Cannot subtract a {type(other)} from an EvalTree.')
 
     def __concat(self, operation: Operator, other: 'EvalTree') -> 'EvalTree':
         new = self.copy()
@@ -207,6 +207,9 @@ class EvalTree:
 
         :return: The single final value from the tree.
         """
+        if self.root is None:
+            # An empty tree evaluates to nothing
+            return 0
         final = self.root.evaluate()
         try:
             return sum(final)
@@ -274,6 +277,8 @@ class EvalTree:
         :return: A string representation of the result, showing the
             results from rolls.
         """
+        if self.root is None:
+            return ''
         if self.root.value is None:
             self.evaluate()
         base = self.__verbose_result_recursive(self.root, 6)
@@ -285,8 +290,6 @@ class EvalTree:
 
     def __verbose_result_recursive(self, current: EvalTreeNode, threshold: int) -> str:
         """Perform an in-order traversal to build the string of the result."""
-        if current is None:
-            return ''
         if current.is_leaf() or current.payload.precedence >= threshold:
             return str(current.value)
         return (self.__verbose_result_recursive(current.left, threshold)
