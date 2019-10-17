@@ -2,8 +2,8 @@ import itertools
 import unittest
 
 from dndice.lib.evaltree import EvalTreeNode, EvalTree
-from dndice.lib.exceptions import ParseError, EvaluationError
-from dndice.lib.operators import OPERATORS, random
+from dndice.lib.exceptions import ParseError, EvaluationError, InputTypeError
+from dndice.lib.operators import OPERATORS, random, Roll
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:
@@ -44,6 +44,19 @@ class TreeTester(unittest.TestCase):
         self.assertIs(node.value, None)
         node.evaluate()
         self.assertEqual(node.payload, node.value)
+
+    def test_tree_prefab(self):
+        fromTokens = EvalTree([4, OPERATORS['d'], 6])
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(OPERATORS['d'],
+                                     EvalTreeNode(4),
+                                     EvalTreeNode(6))
+        self.assertEqual(fromTokens, expected)
+        fromExisting = EvalTree(fromTokens)
+        self.assertEqual(fromExisting, fromTokens)
+        with self.assertRaises(InputTypeError):
+            EvalTree({'invalid'})
+        self.assertEqual(EvalTree(None).evaluate(), 0)
 
     def test_tree_simple_parse(self):
         expr = '4d6'
@@ -126,6 +139,10 @@ class TreeTester(unittest.TestCase):
         # Also test in-place concatenation
         tree1 += tree2
         self.assertEqual(tree1, expected)
+        with self.assertRaises(InputTypeError):
+            tree1 += 1
+        with self.assertRaises(InputTypeError):
+            tree1 + 1
 
     def test_tree_subtraction(self):
         expr1 = '2d20'
@@ -153,11 +170,17 @@ class TreeTester(unittest.TestCase):
         # Also test in-place concatenation
         tree1 -= tree2
         self.assertEqual(tree1, expected)
+        with self.assertRaises(InputTypeError):
+            tree1 -= 1
+        with self.assertRaises(InputTypeError):
+            tree1 - 1
 
     def test_parse_failure(self):
         expr = '4d6+2+'
-        with self.assertRaises(ParseError):
+        with self.assertRaises(ParseError) as context:
             EvalTree(expr)
+        self.assertEqual(str(context.exception), 'Failed to construct an expression from the '
+                                                 'token list.')
 
     def test_eval_failure(self):
         expr = '2d20h(7/2)'
@@ -239,6 +262,18 @@ class TreeTester(unittest.TestCase):
                 self.assertIsNot(origNode.value, copyNode.value)
             if not isinstance(origNode.payload, int):
                 self.assertIsNot(origNode.payload, copyNode.payload)
+
+    def test_print(self):
+        root = EvalTreeNode(OPERATORS['+'],
+                            EvalTreeNode(1),
+                            EvalTreeNode(OPERATORS['d'],
+                                         EvalTreeNode(4),
+                                         EvalTreeNode(20)))
+        tree = EvalTree(None)
+        tree.root = root
+        self.assertEqual(tree.verbose_result(), '1+' + str(Roll([1, 20, 1, 20], 20)) + ' = 43')
+        tree = EvalTree(None)
+        self.assertEqual(tree.verbose_result(), '')
 
 
 if __name__ == '__main__':

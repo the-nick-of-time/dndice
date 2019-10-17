@@ -1,5 +1,6 @@
 import unittest
 from unittest import mock
+import operator
 
 from dndice.lib import exceptions, operators
 
@@ -27,6 +28,17 @@ class TestOperator(unittest.TestCase):
         nonOperator = '('
         self.assertLess(highPrecedence, nonOperator)
         self.assertLessEqual(highPrecedence, nonOperator)
+        self.assertFalse(highPrecedence > nonOperator)
+        self.assertFalse(highPrecedence >= nonOperator)
+        other = 5
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            highPrecedence < other
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            highPrecedence <= other
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            highPrecedence > other
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            highPrecedence >= other
 
     def test_equals(self):
         plus = operators.Operator('+', 2, lambda x, y: x + y)
@@ -107,6 +119,8 @@ class TestRoll(unittest.TestCase):
         testy = operators.Roll([1, 2, 3], 6)
         with self.assertRaises(exceptions.ArgumentValueError):
             testy.discard(10)
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            testy.discard('string')
 
     def test_replace(self):
         self.roll.replace(2, 5)
@@ -116,6 +130,10 @@ class TestRoll(unittest.TestCase):
         slicyboi.replace(slice(5, len(slicyboi)), [20, 21, 22])
         self.assertEqual(slicyboi.rolls, [1, 2, 3, 4, 5, 20, 21, 22])
         self.assertEqual(slicyboi.discards, [6, 7, 8])
+        with self.assertRaises(exceptions.ArgumentValueError):
+            slicyboi.replace(slice(0, 3), [1, 2])
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            slicyboi.replace('abc', [2, 3])
 
     def test_copy(self):
         copy = self.roll.copy()
@@ -199,6 +217,8 @@ class TestRollFunctions(unittest.TestCase):
         self.assertEqual(result.rolls, [1190, 1190])
         self.assertEqual(result.die, (1, 2, 3))
         self.assertEqual(result.discards, [])
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            operators.roll_basic(2, 'abc')
 
     def test_roll_critical(self):
         result = operators.roll_critical(2, 6)
@@ -207,6 +227,8 @@ class TestRollFunctions(unittest.TestCase):
         result = operators.roll_critical(2, (1, 2, 3))
         self.assertEqual(result.rolls, [1190, 1190, 1190, 1190])
         self.assertEqual(result.die, (1, 2, 3))
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            operators.roll_critical(2, 'abc')
 
     def test_roll_max(self):
         # actually deterministic anyway
@@ -216,6 +238,8 @@ class TestRollFunctions(unittest.TestCase):
         result = operators.roll_max(2, (1, 2, 3))
         self.assertEqual(result.rolls, [3, 3])
         self.assertEqual(result.die, (1, 2, 3))
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            operators.roll_max(2, 'abc')
 
     def test_roll_average(self):
         # actually deterministic anyway
@@ -225,6 +249,8 @@ class TestRollFunctions(unittest.TestCase):
         result = operators.roll_average(2, (1, 1, 3, 5, 10))
         self.assertEqual(result.rolls, [4., 4.])
         self.assertEqual(result.die, (1, 1, 3, 5, 10))
+        with self.assertRaises(exceptions.ArgumentTypeError):
+            operators.roll_average(2, 'abc')
 
     def test_reroll_once_on(self):
         result = operators.reroll_once_on(self.roll, 2)
