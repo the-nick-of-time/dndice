@@ -1,0 +1,7 @@
+.git/
+.idea/
+venv/
+dist/
+htmlcov/
+rolling.egg-info/
+docs/

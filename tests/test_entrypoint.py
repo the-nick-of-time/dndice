@@ -59,11 +59,11 @@ class TestCoreFunctions(unittest.TestCase):
         self.assertEqual(verbose('3d4 + 2'), expected)
         expected = '{roll}+2+1 = 15'.format(roll=Roll([4, 4, 4], 4))
         self.assertEqual(verbose('3d4 + 2', modifiers=1), expected)
-        expected = f'{Roll([2.5, 2.5, 2.5], 4)}+2 = 9.5'
+        expected = '{}+2 = 9.5'.format(Roll([2.5, 2.5, 2.5], 4))
         self.assertEqual(verbose('3d4+2', mode=Mode.AVERAGE), expected)
-        expected = f'{Roll([6, 6, 6], 6)}+2 = 20'
+        expected = '{}+2 = 20'.format(Roll([6, 6, 6], 6))
         self.assertEqual(verbose('3d6+2', mode=Mode.MAX), expected)
-        expected = f'{Roll([4, 4, 4, 4, 4, 4], 4)}+2 = 26'
+        expected = '{}+2 = 26'.format(Roll([4, 4, 4, 4, 4, 4], 4))
         self.assertEqual(verbose('3d4+2', mode=Mode.CRIT), expected)
         with self.assertRaises(InputTypeError):
             verbose([40, 2])

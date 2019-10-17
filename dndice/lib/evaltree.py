@@ -113,7 +113,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__concat(OPERATORS['+'], other)
-        raise InputTypeError(f'Cannot add a {type(other)} to an EvalTree.')
+        raise InputTypeError('Cannot add a {} to an EvalTree.'.format(type(other)))
 
     def __iadd__(self, other) -> 'EvalTree':
         """Join two trees together with the addition operator in-place.
@@ -134,7 +134,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__in_place_concat(OPERATORS['+'], other)
-        raise InputTypeError(f'Cannot add a {type(other)} to an EvalTree.')
+        raise InputTypeError('Cannot add a {} to an EvalTree.'.format(type(other)))
 
     def __sub__(self, other):
         """Join two trees together with the subtraction operator.
@@ -148,7 +148,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__concat(OPERATORS['-'], other)
-        raise InputTypeError(f'Cannot subtract a {type(other)} from an EvalTree.')
+        raise InputTypeError('Cannot subtract a {} from an EvalTree.'.format(type(other)))
 
     def __isub__(self, other):
         """Join two trees together with the subtraction operator in-place.
@@ -169,7 +169,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__in_place_concat(OPERATORS['-'], other)
-        raise InputTypeError(f'Cannot subtract a {type(other)} from an EvalTree.')
+        raise InputTypeError('Cannot subtract a {} from an EvalTree.'.format(type(other)))
 
     def __concat(self, operation: Operator, other: 'EvalTree') -> 'EvalTree':
         new = self.copy()
