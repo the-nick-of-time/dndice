@@ -3,6 +3,9 @@ docs_theme ?= "sphinx_rtd_theme"
 
 .PHONY: docs test coverage
 
+SOURCES=$(wildcard dndice/*.py) $(wildcard dndice/lib/*.py)
+
+
 build: docs test
 	poetry build
 
@@ -21,3 +24,6 @@ coverage:
 	coverage report
 	coverage html
 	firefox htmlcov/index.html
+
+compatibility:
+	docker build -t dndice_compat . && docker run --rm --name rolling_test dndice_compat

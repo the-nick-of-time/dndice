@@ -42,8 +42,8 @@ class TestOperator(unittest.TestCase):
 
     def test_equals(self):
         plus = operators.Operator('+', 2, lambda x, y: x + y)
-        positive = operators.Operator('p', 4, lambda x: x, arity=operators.Side.RIGHT, cajole=operators.Side.RIGHT,
-                                      viewAs='+')
+        positive = operators.Operator('p', 4, lambda x: x, arity=operators.Side.RIGHT,
+                                      cajole=operators.Side.RIGHT, viewAs='+')
         self.assertNotEqual(plus, positive)
         self.assertEqual(plus, '+')
         self.assertEqual(plus, plus)
@@ -61,7 +61,8 @@ class TestOperator(unittest.TestCase):
     def test_arity(self):
         arityLeft = operators.Operator('!', 8, TestOperator.echo_one, arity=operators.Side.LEFT,
                                        cajole=operators.Side.NEITHER)
-        arityRight = operators.Operator('m', 4, TestOperator.echo_one, arity=operators.Side.RIGHT,
+        arityRight = operators.Operator('m', 4, TestOperator.echo_one,
+                                        arity=operators.Side.RIGHT,
                                         cajole=operators.Side.NEITHER)
         arityBoth = operators.Operator('+', 2, TestOperator.echo, cajole=operators.Side.NEITHER)
         bothOperands = ((1, 2, 3), (4, 5, 6))

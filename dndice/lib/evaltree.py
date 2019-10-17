@@ -15,13 +15,15 @@ from .operators import OPERATORS, Roll, Operator, Side
 Result = typing.Union[Roll, int, float]
 Final = typing.Union[int, float]
 Predicate = typing.Callable[['EvalTreeNode'], bool]
+Root = typing.Optional[typing.Union[str, typing.List[Token], 'EvalTree', None]]
 
 
 class EvalTreeNode:
     """A node in the EvalTree, which can hold a value or operator."""
     __slots__ = 'payload', 'left', 'right', 'value'
 
-    def __init__(self, payload: Token, left: 'EvalTreeNode' = None, right: 'EvalTreeNode' = None):
+    def __init__(self, payload: typing.Optional[Token], left: 'EvalTreeNode' = None,
+                 right: 'EvalTreeNode' = None):
         """Initialize a new node in the expression tree.
 
         Leaf nodes (those with no left or right children) are guaranteed
@@ -35,10 +37,10 @@ class EvalTreeNode:
         :param right: The right child of this node, which holds the
             operand or expression to the right of this operator.
         """
-        self.payload: Token = payload
-        self.left: EvalTreeNode = left
-        self.right: EvalTreeNode = right
-        self.value: typing.Optional[Result] = None
+        self.payload = payload  # type: Token
+        self.left = left  # type: EvalTreeNode
+        self.right = right  # type: EvalTreeNode
+        self.value = None  # type: typing.Optional[Result]
 
     def evaluate(self) -> Result:
         """Recursively evaluate this subtree and return its computed value.
@@ -54,7 +56,8 @@ class EvalTreeNode:
             self.value = self.payload
             return self.value
         else:
-            self.value = self.payload(self.left and self.left.evaluate(), self.right and self.right.evaluate())
+            self.value = self.payload(self.left and self.left.evaluate(),
+                                      self.right and self.right.evaluate())
             return self.value
 
     def is_leaf(self) -> bool:
@@ -76,13 +79,13 @@ class EvalTree:
     """
     __slots__ = 'root',
 
-    def __init__(self, source: typing.Union[str, typing.List[Token], 'EvalTree', None]):
+    def __init__(self, source: Root):
         """Initialize a tree of EvalTreeNodes that represent a given expression.
 
         :param source: The expression, generally as a string or already
             tokenized list or compiled tree.
         """
-        self.root: typing.Optional[EvalTreeNode] = None
+        self.root = None  # type: typing.Optional[EvalTreeNode]
         if isinstance(source, str):
             self.from_tokens(tokens(source))
         elif isinstance(source, EvalTree):
@@ -95,7 +98,8 @@ class EvalTree:
             # Explicitly do nothing; leave us with an empty tree
             pass
         else:
-            raise InputTypeError(f"You can't construct an EvalTree from type {type(source)}")
+            fmt = "You can't construct an EvalTree from type {}"
+            raise InputTypeError(fmt.format(type(source)))
 
     def __add__(self, other) -> 'EvalTree':
         """Join two trees together with the addition operator.
@@ -109,7 +113,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__concat(OPERATORS['+'], other)
-        raise InputTypeError(f'Cannot add a {type(other)} to an EvalTree.')
+        raise InputTypeError('Cannot add a {} to an EvalTree.'.format(type(other)))
 
     def __iadd__(self, other) -> 'EvalTree':
         """Join two trees together with the addition operator in-place.
@@ -130,7 +134,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__in_place_concat(OPERATORS['+'], other)
-        raise InputTypeError(f'Cannot add a {type(other)} to an EvalTree.')
+        raise InputTypeError('Cannot add a {} to an EvalTree.'.format(type(other)))
 
     def __sub__(self, other):
         """Join two trees together with the subtraction operator.
@@ -144,7 +148,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__concat(OPERATORS['-'], other)
-        raise InputTypeError(f'Cannot subtract a {type(other)} from an EvalTree.')
+        raise InputTypeError('Cannot subtract a {} from an EvalTree.'.format(type(other)))
 
     def __isub__(self, other):
         """Join two trees together with the subtraction operator in-place.
@@ -165,7 +169,7 @@ class EvalTree:
         """
         if isinstance(other, EvalTree):
             return self.__in_place_concat(OPERATORS['-'], other)
-        raise InputTypeError(f'Cannot subtract a {type(other)} from an EvalTree.')
+        raise InputTypeError('Cannot subtract a {} from an EvalTree.'.format(type(other)))
 
     def __concat(self, operation: Operator, other: 'EvalTree') -> 'EvalTree':
         new = self.copy()
@@ -220,16 +224,16 @@ class EvalTree:
     def from_tokens(self, tokens: typing.List[Token]) -> None:
         """Construct the expression tree formed from the infix token list.
 
-        This uses a `shunting-yard algorithm <https://en.wikipedia.org/wiki/Shunting-yard_algorithm>`_
-        to parse the infix token list into an expression tree. In
-        relation to that algorithm, the "output" stack is populated with
-        with subtrees that are progressively joined together using
-        operators to create the final full tree.
+        This uses a `shunting-yard algorithm
+        <https://en.wikipedia.org/wiki/Shunting-yard_algorithm>`_ to parse the infix token
+        list into an expression tree. In relation to that algorithm, the "output" stack is
+        populated with with subtrees that are progressively joined together using operators
+        to create the final full tree.
 
         :param tokens: The list of tokens parsed from the infix expression.
         """
-        expression: typing.List[EvalTreeNode] = []
-        operators: typing.List[Operator] = []
+        expression = []  # type: typing.List[EvalTreeNode]
+        operators = []  # type: typing.List[Operator]
         for t in tokens:
             if isinstance(t, (int, tuple)):
                 expression.append(EvalTreeNode(t))
@@ -253,7 +257,7 @@ class EvalTree:
 
     @staticmethod
     def one_operation(ops: typing.List[Operator], values: typing.List[EvalTreeNode]):
-        """Pop the top operator and give it the top one or two subtrees from the values stack as children.
+        """Pop the top operator and give it the top one or two subtrees from the values stack.
         Then push the resulting subtree onto the values stack for application in future.
 
         :param ops: The current stack of operators.
@@ -268,7 +272,7 @@ class EvalTree:
         values.append(node)
 
     def verbose_result(self) -> str:
-        """Forms an infix expression of the result, basically looking like the original but with rolls evaluated.
+        """Forms an infix string of the result, looking like the original with rolls evaluated.
 
         Note that parentheses are discarded in the parsing step so the
         output may not match the input when there was a parenthetical
@@ -303,8 +307,8 @@ class EvalTree:
         else:
             return self.__pre_order_recursive(self.root, lambda node: False)
 
-    def __pre_order_recursive(self, current: EvalTreeNode, abort: Predicate) -> typing.Generator[
-        EvalTreeNode, None, None]:
+    def __pre_order_recursive(self, current: EvalTreeNode, abort: Predicate) -> \
+            typing.Generator[EvalTreeNode, None, None]:
         """Recurse through the tree."""
         yield current
         if not abort(current):
@@ -349,14 +353,16 @@ class EvalTree:
 
     def is_critical(self) -> bool:
         """Checks if this roll contains a d20 roll that is a natural 20."""
-        for node in self.pre_order(lambda node: isinstance(node.value, Roll) and node.value.die == 20):
+        for node in self.pre_order(lambda node: (isinstance(node.value, Roll)
+                                                 and node.value.die == 20)):
             if isinstance(node.value, Roll) and node.value.die == 20 and 20 in node.value:
                 return True
         return False
 
     def is_fail(self) -> bool:
         """Checks if this roll contains a d20 roll that is a natural 1."""
-        for node in self.pre_order(lambda node: isinstance(node.value, Roll) and node.value.die == 20):
+        for node in self.pre_order(lambda node: (isinstance(node.value, Roll)
+                                                 and node.value.die == 20)):
             if isinstance(node.value, Roll) and node.value.die == 20 and 1 in node.value:
                 return True
         return False

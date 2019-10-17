@@ -7,7 +7,8 @@ from dndice.lib.operators import OPERATORS, random, Roll
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:
-    for nodeA, nodeB in itertools.zip_longest(a.pre_order(), b.pre_order(), fillvalue=EvalTreeNode(None)):
+    for nodeA, nodeB in itertools.zip_longest(a.pre_order(), b.pre_order(),
+                                              fillvalue=EvalTreeNode(None)):
         if nodeA.payload != nodeB.payload:
             return False
     return True
@@ -270,7 +271,7 @@ class TreeTester(unittest.TestCase):
                                          EvalTreeNode(20)))
         tree = EvalTree(None)
         tree.root = root
-        self.assertEqual(tree.verbose_result(), f'1+{Roll([1, 20, 1, 20], 20)} = 43')
+        self.assertEqual(tree.verbose_result(), '1+' + str(Roll([1, 20, 1, 20], 20)) + ' = 43')
         tree = EvalTree(None)
         self.assertEqual(tree.verbose_result(), '')
 
