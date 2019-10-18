@@ -1,4 +1,11 @@
+# compiled python files
 *.pyc
+# package built through poetry
+/dist/
+# docs
 /docs/_build/
+# test coverage reports
 /htmlcov/
 /.coverage
+# virtualenv
+/venv/
