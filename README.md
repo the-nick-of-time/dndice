@@ -58,8 +58,7 @@ For a GUI that does the same, check out my repository [DnD](https://github.com/t
 
 ### As a developer
 
-This entire repository can be used as a package, due to the `__init__.py` file in the root. 
-This exposes the entire useful contents of the package at the top level so you can clone this repository anywhere you want to have access.
-Of course, you could also install this as a standard python package through PyPI just like normal. 
+If you just want to use this in an application, install it through PyPI and import it as `dndice`. The main function you want is `basic`, which will simply evaluate an expression and return the final number. `verbose` is useful for giving a more detailed look at what was actually rolled, targeted at direct display to a user. `compile` can be used to precompile expressions for quick evaluation of the same expression many times. For a complete view, see [the docs](https://rolling.readthedocs.io/en/latest/).
 
-Install [poetry](https://github.com/sdispater/poetry) for dependency management. There are no runtime dependencies, and the only development dependencies are [sphinx](http://www.sphinx-doc.org/en/master/) for documentation and [nose2](https://nose2.readthedocs.io/en/latest/index.html) for testing. 
+To modify this package, first install [poetry](https://github.com/sdispater/poetry) for dependency management. There are no runtime dependencies, and the only development dependencies are [sphinx](http://www.sphinx-doc.org/en/master/) for documentation and [nose2](https://nose2.readthedocs.io/en/latest/index.html) for testing.
+You probably also want GNU make because I have a number of tasks scripted in the Makefile at the project root.
