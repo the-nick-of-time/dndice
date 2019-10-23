@@ -1,4 +1,4 @@
-# Rolling
+# DnDice
 
 [![PyPI version](https://badge.fury.io/py/dndice.svg)](https://badge.fury.io/py/dndice)
 [![Documentation Status](https://readthedocs.org/projects/rolling/badge/?version=latest)](https://rolling.readthedocs.io/en/latest/?badge=latest)
