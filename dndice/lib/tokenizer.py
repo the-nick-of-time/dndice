@@ -13,8 +13,20 @@ Value = typing.Union[Roll, int, typing.Tuple[float, ...]]
 Token = typing.Union[Value, Operator, str]
 
 
-def _string_to_operator(agg: str) -> typing.Union[str, Operator]:
-    return OPERATORS.get(agg, agg)
+def _string_to_operator(agg: str, offset: int, expr: str) -> typing.Union[str, Operator]:
+    """Converts a string to the corresponding Operator.
+
+    :param agg: The string that should be an operator.
+    :param offset: The current position in the string.
+    :param expr: The total expression.
+    :raises ParseError: On an invalid operator.
+    :return: The Operator or, if the input was a parenthesis, the original string.
+    """
+    if agg == '(' or agg == ')':
+        return agg
+    if agg not in OPERATORS:
+        raise ParseError("Invalid operator.", offset - len(agg), expr)
+    return OPERATORS[agg]
 
 
 def _read_list(s: str, mode=float) -> typing.Tuple[float, ...]:
@@ -94,7 +106,7 @@ def tokens(s: str) -> typing.List[Token]:
         char = s[i]
         if char in nums:
             if curr_op:
-                op = _string_to_operator(curr_op)
+                op = _string_to_operator(curr_op, i, s)
                 tokenlist.append(op)
                 curr_op = ''
             curr_num += char
@@ -108,12 +120,12 @@ def tokens(s: str) -> typing.List[Token]:
             if char in '+-' and (i == 0 or curr_op or tokenlist[-1] == '('
                                  or isinstance(tokenlist[-1], Operator)):
                 if curr_op:
-                    tokenlist.append(_string_to_operator(curr_op))
+                    tokenlist.append(_string_to_operator(curr_op, i, s))
                     curr_op = ''
                 if char == '+':
-                    tokenlist.append(_string_to_operator('p'))
+                    tokenlist.append(_string_to_operator('p', i, s))
                 else:  # char is -
-                    tokenlist.append(_string_to_operator('m'))
+                    tokenlist.append(_string_to_operator('m', i, s))
             else:
                 if len(curr_op) == 0:
                     # This is the first time you see an operator since last
@@ -126,14 +138,14 @@ def tokens(s: str) -> typing.List[Token]:
                 else:
                     # Two separate operators; push out the old one and start
                     # collecting the new one
-                    op = _string_to_operator(curr_op)
+                    op = _string_to_operator(curr_op, i, s)
                     tokenlist.append(op)
                     curr_op = char
         elif char == '[':
             if curr_op not in ('d', 'da', 'dc', 'dm'):
                 raise ParseError("A list can only appear as the sides of a die.", i, s)
             if curr_op:
-                tokenlist.append(_string_to_operator(curr_op))
+                tokenlist.append(_string_to_operator(curr_op, i, s))
                 curr_op = ''
             # Start a list of floats
             sideList = []
@@ -154,20 +166,19 @@ def tokens(s: str) -> typing.List[Token]:
                 raise ParseError("F is the 'fudge dice' value, and must appear as the side "
                                  "specifier of a roll.", i, s)
             if curr_op:
-                tokenlist.append(_string_to_operator(curr_op))
+                tokenlist.append(_string_to_operator(curr_op, i, s))
                 curr_op = ''
             # Fudge die
             tokenlist.append((-1, 0, 1))
-        else:
-            # Ignore all other characters
-            # This includes whitespace and all printing characters that do not occur in at least
-            # one operator expression
+        elif char.isspace():
             pass
+        else:
+            raise ParseError("Unrecognized character detected.", i, s)
         i += 1
     # At most one will be occupied
     # And the only time neither will be is when the input string is empty
     if curr_num:
         tokenlist.append(int(curr_num))
     elif curr_op:
-        tokenlist.append(_string_to_operator(curr_op))
+        tokenlist.append(_string_to_operator(curr_op, i, s))
     return tokenlist

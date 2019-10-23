@@ -63,6 +63,8 @@ class TokenTester(unittest.TestCase):
             '1d[2, 3, 5',
             '1+4)',
             '1+F',
+            '1a4',
+            '1x4',
         ]
         for s in cases:
             with self.assertRaises(exceptions.ParseError):
