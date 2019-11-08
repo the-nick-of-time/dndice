@@ -234,6 +234,7 @@ class EvalTree:
         """
         expression = []  # type: typing.List[EvalTreeNode]
         operators = []  # type: typing.List[Operator]
+        # TODO: expressions with extra parentheses end up wrong (may just be a tokenize thing)
         for t in tokens:
             if isinstance(t, (int, tuple)):
                 expression.append(EvalTreeNode(t))
@@ -245,7 +246,7 @@ class EvalTree:
                 operators.pop()
             else:
                 while (len(operators)
-                       and isinstance(operators[-1], Operator)
+                       # and isinstance(operators[-1], Operator)
                        and (operators[-1] > t
                             or (operators[-1].precedence == t.precedence
                                 and operators[-1].associativity == Side.LEFT))):
@@ -274,9 +275,8 @@ class EvalTree:
     def verbose_result(self) -> str:
         """Forms an infix string of the result, looking like the original with rolls evaluated.
 
-        Note that parentheses are discarded in the parsing step so the
-        output may not match the input when there was a parenthetical
-        expression.
+        The expression is constructed with as few parentheses as possible. This means that if
+        there were redundant parentheses in the input, they will not show up here.
 
         :return: A string representation of the result, showing the
             results from rolls.
@@ -292,13 +292,17 @@ class EvalTree:
             final = self.root.value
         return base + ' = ' + str(final)
 
-    def __verbose_result_recursive(self, current: EvalTreeNode, threshold: int) -> str:
+    def __verbose_result_recursive(self, current: EvalTreeNode, threshold: int,
+                                   parent: typing.Optional[EvalTreeNode] = None) -> str:
         """Perform an in-order traversal to build the string of the result."""
         if current.is_leaf() or current.payload.precedence >= threshold:
             return str(current.value)
-        return (self.__verbose_result_recursive(current.left, threshold)
+        # TODO: fails on unary operators
+        return (('(' if parent and parent.payload > current.payload else '')
+                + self.__verbose_result_recursive(current.left, threshold, current)
                 + str(current.payload)
-                + self.__verbose_result_recursive(current.right, threshold))
+                + self.__verbose_result_recursive(current.right, threshold, current)
+                + (')' if parent and parent.payload > current.payload else ''))
 
     def pre_order(self, abort=None) -> typing.Generator[EvalTreeNode, None, None]:
         """Perform a pre-order/breadth-first traversal of the tree."""

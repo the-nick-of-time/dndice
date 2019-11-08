@@ -117,6 +117,7 @@ def tokens(s: str) -> typing.List[Token]:
                 curr_num = ''
             # + and - are the unary operators iff they occur at the beginning of an expression
             # or immediately after another operator
+            # TODO: extra parentheses like around single values cause false positives
             if char in '+-' and (i == 0 or curr_op or tokenlist[-1] == '('
                                  or isinstance(tokenlist[-1], Operator)):
                 if curr_op:
@@ -140,7 +141,13 @@ def tokens(s: str) -> typing.List[Token]:
                     # collecting the new one
                     op = _string_to_operator(curr_op, i, s)
                     tokenlist.append(op)
-                    curr_op = char
+                    if char in '()':
+                        # Parentheses can never be part of an operator, and them occupying space
+                        # there can cause false positives when checking for unary operators
+                        tokenlist.append(char)
+                        curr_op = ''
+                    else:
+                        curr_op = char
         elif char == '[':
             if curr_op not in ('d', 'da', 'dc', 'dm'):
                 raise ParseError("A list can only appear as the sides of a die.", i, s)

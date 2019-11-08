@@ -34,6 +34,9 @@ class TokenTester(unittest.TestCase):
             "(4)": ["(", 4, ")"],
             "(-4)": ["(", operators.OPERATORS['m'], 4, ")"],
             "2d(1d4)": [2, operators.OPERATORS['d'], "(", 1, operators.OPERATORS['d'], 4, ")"],
+            "2*(4+8)": [2, operators.OPERATORS['*'], '(', 4, operators.OPERATORS['+'], 8, ')'],
+            "(2)*((4)+(8))": ["(", 2, ")", operators.OPERATORS['*'], "(", "(", 4, ")",
+                              operators.OPERATORS['+'], "(", 8, ")", ")"]
         }
         for s, tok in results.items():
             self.assertEqual(tokenizer.tokens(s), tok)

@@ -4,10 +4,8 @@ docs_format ?= html
 
 .PHONY: docs test coverage clean
 
-SOURCES=$(wildcard dndice/*.py) $(wildcard dndice/lib/*.py)
 
-
-build: docs test
+build: coverage docs
 	poetry build
 
 publish: build
