@@ -79,11 +79,10 @@ def tokens(s: str) -> typing.List[Token]:
     #.  If the character is 'F', it is the fudge die (-1, 0, or 1). It
         also has to appear as the sides of a die.
 
-    #.  If the character satisfies none of these, it is ignored. This
-        does have the weird effect that something like '24zzzz5' is
-        interpreted as the number 245. This behavior may be dealt with
-        in future. Perhaps throw a ``ParseError`` on any non-whitespace
-        character encountered.
+    #.  If the character is whitespace, it is ignored.
+
+    #.  If the character satisfies none of these, it throws a
+        ``ParseError``.
 
     :param s: The expression to be parsed
     :return: A list of tokens
@@ -128,7 +127,14 @@ def tokens(s: str) -> typing.List[Token]:
                 else:  # char is -
                     tokenlist.append(_string_to_operator('m', i, s))
             else:
-                if len(curr_op) == 0:
+                if char in '()':
+                    # Parentheses can never be part of an operator, and them occupying space
+                    # there can cause false positives when checking for unary operators
+                    if curr_op:
+                        tokenlist.append(_string_to_operator(curr_op, i, s))
+                    tokenlist.append(char)
+                    curr_op = ''
+                elif len(curr_op) == 0:
                     # This is the first time you see an operator since last
                     # time the list was cleared
                     curr_op += char
@@ -141,13 +147,7 @@ def tokens(s: str) -> typing.List[Token]:
                     # collecting the new one
                     op = _string_to_operator(curr_op, i, s)
                     tokenlist.append(op)
-                    if char in '()':
-                        # Parentheses can never be part of an operator, and them occupying space
-                        # there can cause false positives when checking for unary operators
-                        tokenlist.append(char)
-                        curr_op = ''
-                    else:
-                        curr_op = char
+                    curr_op = char
         elif char == '[':
             if curr_op not in ('d', 'da', 'dc', 'dm'):
                 raise ParseError("A list can only appear as the sides of a die.", i, s)
