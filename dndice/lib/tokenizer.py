@@ -7,7 +7,7 @@ import string
 import typing
 
 from .exceptions import ParseError
-from .operators import OPERATORS, Operator, Roll
+from .operators import OPERATORS, Operator, Roll, Side
 
 Value = typing.Union[Roll, int, typing.Tuple[float, ...]]
 Token = typing.Union[Value, Operator, str]
@@ -116,9 +116,9 @@ def tokens(s: str) -> typing.List[Token]:
                 curr_num = ''
             # + and - are the unary operators iff they occur at the beginning of an expression
             # or immediately after another operator
-            # TODO: extra parentheses like around single values cause false positives
-            if char in '+-' and (i == 0 or curr_op or tokenlist[-1] == '('
-                                 or isinstance(tokenlist[-1], Operator)):
+            if char in '+-' and (i == 0 or (curr_op and curr_op != '!') or tokenlist[-1] == '('
+                                 or (isinstance(tokenlist[-1], Operator)
+                                     and tokenlist[-1].arity & Side.RIGHT)):
                 if curr_op:
                     tokenlist.append(_string_to_operator(curr_op, i, s))
                     curr_op = ''
@@ -132,6 +132,11 @@ def tokens(s: str) -> typing.List[Token]:
                     # there can cause false positives when checking for unary operators
                     if curr_op:
                         tokenlist.append(_string_to_operator(curr_op, i, s))
+                        if (isinstance(tokenlist[-1], Operator)
+                                and ((char == ')' and tokenlist[-1].arity & Side.RIGHT)
+                                     or (char == '(' and not tokenlist[
+                                                                 -1].arity & Side.RIGHT))):
+                            raise ParseError('Unexpectedly terminated expression.', i, s)
                     tokenlist.append(char)
                     curr_op = ''
                 elif len(curr_op) == 0:

@@ -234,7 +234,6 @@ class EvalTree:
         """
         expression = []  # type: typing.List[EvalTreeNode]
         operators = []  # type: typing.List[Operator]
-        # TODO: expressions with extra parentheses end up wrong (may just be a tokenize thing)
         for t in tokens:
             if isinstance(t, (int, tuple)):
                 expression.append(EvalTreeNode(t))
@@ -246,7 +245,7 @@ class EvalTree:
                 operators.pop()
             else:
                 while (len(operators)
-                       # and isinstance(operators[-1], Operator)
+                       and isinstance(operators[-1], Operator)
                        and (operators[-1] > t
                             or (operators[-1].precedence == t.precedence
                                 and operators[-1].associativity == Side.LEFT))):

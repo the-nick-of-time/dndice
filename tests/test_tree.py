@@ -120,6 +120,12 @@ class TreeTester(unittest.TestCase):
                                      EvalTreeNode(OPERATORS['+'],
                                                   EvalTreeNode(8),
                                                   EvalTreeNode(4)))
+        self.assertEqual(tree, expected)
+        expr = '((3))'
+        tree = EvalTree(expr)
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(3)
+        self.assertEqual(tree, expected)
 
     def test_tree_addition(self):
         expr1 = '2d20'
@@ -189,8 +195,6 @@ class TreeTester(unittest.TestCase):
             EvalTree(expr)
         self.assertEqual(str(context.exception), 'Failed to construct an expression from the '
                                                  'token list.')
-        with self.assertRaises(ParseError):
-            EvalTree('2*((4+)8)')
 
     def test_eval_failure(self):
         expr = '2d20h(7/2)'
