@@ -5,7 +5,6 @@ function that actually performs the tokenization.
 """
 import string
 import typing
-from typing import List
 
 from .exceptions import ParseError
 from .operators import OPERATORS, Operator, Roll, Side
