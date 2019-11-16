@@ -1,5 +1,5 @@
 import string
-from typing import Optional, Tuple, List, Type, Set, Iterable, Sequence
+from typing import Optional, Tuple, List, Type, Set, Iterable, Sequence, Union
 
 from .exceptions import ParseError
 from .operators import OPERATORS, Side
@@ -27,7 +27,7 @@ def tokens_lazy(s: str) -> Iterable[Token]:
 class State:
     _recognized = (set(''.join(OPERATORS)) - set('p')
                    | set(string.digits)
-                   | set('.')
+                   | set('.F,')
                    | set('[]()')
                    | set(string.whitespace))
     followers = tuple()  # type: Tuple[Type[State], ...]
@@ -50,12 +50,12 @@ class State:
                 self.slurp_whitespace()
                 if self.i >= len(self.expr):
                     return self._end_of_input(agg)
-                forward = self.next_state(self.expr[self.i])
+                forward = self.next_state(self.expr[self.i], agg)
                 if forward is None:
                     # Meaning it's trying to continue the same token
                     raise ParseError("Token is already broken.", self.i, self.expr)
                 return self.collect(agg), forward
-            forward = self.next_state(char)
+            forward = self.next_state(char, agg)
             if forward:
                 return self.collect(agg), forward
             else:
@@ -70,8 +70,8 @@ class State:
         while self.i < len(self.expr) and self.expr[self.i].isspace():
             self.i += 1
 
-    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
-        if agg is not None and len(agg) < self.consumes and char in self.options:
+    def next_state(self, char: str, agg: Sequence[str]) -> Optional['State']:
+        if len(agg) < self.consumes and char in self.options:
             # Don't move forward yet, just add to the aggregator
             return None
         for typ in self.followers:
@@ -114,7 +114,7 @@ class ExprEnd(State):
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (UnarySuffix, Binary, InputEnd)
+        self.followers = (UnarySuffix, Binary, Die, CloseParen, InputEnd)
 
 
 class InputStart(State):
@@ -129,10 +129,12 @@ class InputEnd(State):
 
 class Integer(State):
     options = set(string.digits)
+    # No one will have a million-digit integer right?
+    consumes = 1e6
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (ExprEnd,)
+        self.followers = (ExprEnd, InputEnd)
 
     def collect(self, agg: List[str]) -> Token:
         return int(''.join(agg))
@@ -149,9 +151,11 @@ class Operator(State):
 
 class Binary(Operator):
     # All the operator codes
-    codes = {code for code, op in OPERATORS.items() if op.arity == Side.BOTH}
+    codes = {code for code, op in OPERATORS.items() if (op.arity == Side.BOTH
+                                                        and not code.startswith('d'))}
     # The characters that can start an operator
-    options = {code[0] for code, op in OPERATORS.items() if op.arity == Side.BOTH}
+    options = {code[0] for code, op in OPERATORS.items() if (op.arity == Side.BOTH
+                                                             and not code.startswith('d'))}
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -163,13 +167,19 @@ class Binary(Operator):
         if potential in self.codes:
             # Continue aggregation
             return None
-        return ExprStart(self.expr, self.i)
+        for typ in self.followers:
+            if char in typ.options:
+                return typ(self.expr, self.i)
+        self._illegal_character(char)
 
 
 class Die(Binary):
+    options = 'd'
+    codes = {code for code in OPERATORS if code.startswith('d')}
+
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (Integer, ListToken, FudgeDie)
+        self.followers = (Integer, ListToken, FudgeDie, OpenParen)
 
 
 class UnaryPrefix(Operator):
@@ -179,13 +189,20 @@ class UnaryPrefix(Operator):
         super().__init__(expr, i)
         self.followers = (ExprStart,)
 
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        token = agg[0]
+        if token == '+':
+            return OPERATORS['p']
+        if token == '-':
+            return OPERATORS['m']
+
 
 class UnarySuffix(Operator):
     options = '!'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (ExprEnd,)
+        self.followers = (ExprEnd, InputEnd)
 
 
 class OpenParen(State):
@@ -207,10 +224,10 @@ class CloseParen(State):
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (ExprEnd,)
+        self.followers = (ExprEnd, InputEnd)
 
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
-        return ExprEnd(self.expr, self.i)
+        return ExprEnd(self.expr, self.i + 1)
 
     def collect(self, agg: List[str]) -> Optional[Token]:
         return ')'
@@ -222,7 +239,7 @@ class ListToken(State):
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (ExprEnd,)
+        self.followers = (ExprEnd, InputEnd)
 
     def run(self) -> Tuple[Token, 'State']:
         sides = []
@@ -231,7 +248,7 @@ class ListToken(State):
             value, state = state.run()
             if value is not None:
                 sides.append(value)
-        return tuple(sides), ExprEnd(state.expr, state.i)
+        return tuple(sides), ExprEnd(state.expr, state.i + 1)
 
 
 class ListStart(State):
@@ -249,8 +266,8 @@ class ListValue(State):
         super().__init__(expr, i)
         self.followers = (ListSeparator, ListEnd)
 
-    def collect(self, agg: List[str]) -> Optional[Token]:
-        return
+    def collect(self, agg: Sequence[str]) -> Optional[Union[Token, float]]:
+        return float(''.join(agg))
 
 
 class ListSeparator(State):
@@ -266,7 +283,7 @@ class ListEnd(State):
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (ExprEnd,)
+        self.followers = (ExprEnd, InputEnd)
 
 
 class FudgeDie(State):
@@ -274,7 +291,7 @@ class FudgeDie(State):
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (ExprEnd,)
+        self.followers = (ExprEnd, InputEnd)
 
     def collect(self, agg: Sequence[str]) -> Optional[Token]:
         return -1, 0, 1

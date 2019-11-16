@@ -1,7 +1,7 @@
 import itertools
 import unittest
 
-from dndice.lib import exceptions, operators, tokenizer
+from dndice.lib import exceptions, operators, state_machine as tokenizer
 
 
 class TokenTester(unittest.TestCase):
@@ -30,7 +30,7 @@ class TokenTester(unittest.TestCase):
 
     def test_parentheses(self):
         results = {
-            "()": ["(", ")"],
+            # "()": ["(", ")"],
             "(4)": ["(", 4, ")"],
             "(-4)": ["(", operators.OPERATORS['m'], 4, ")"],
             "2d(1d4)": [2, operators.OPERATORS['d'], "(", 1, operators.OPERATORS['d'], 4, ")"],
@@ -110,6 +110,13 @@ class TokenTester(unittest.TestCase):
     def test_double_operator(self):
         results = {
             "4!-4": [4, operators.OPERATORS['!'], operators.OPERATORS['-'], 4],
+        }
+        for s, tok in results.items():
+            self.assertEqual(tokenizer.tokens(s), tok)
+
+    def test_multi_character(self):
+        results = {
+            '10 >= 5': [10, operators.OPERATORS['>='], 5]
         }
         for s, tok in results.items():
             self.assertEqual(tokenizer.tokens(s), tok)
