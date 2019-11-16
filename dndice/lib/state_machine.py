@@ -71,8 +71,8 @@ class State:
             self.i += 1
 
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
-        if len(agg) < self.consumes and char in self.options:
-            # Don't move forward yet, just add to the
+        if agg is not None and len(agg) < self.consumes and char in self.options:
+            # Don't move forward yet, just add to the aggregator
             return None
         for typ in self.followers:
             if char in typ.options:
@@ -148,14 +148,22 @@ class Operator(State):
 
 
 class Binary(Operator):
-    options = {code[0]: code for code, op in OPERATORS.items() if op.arity == Side.BOTH}
+    # All the operator codes
+    codes = {code for code, op in OPERATORS.items() if op.arity == Side.BOTH}
+    # The characters that can start an operator
+    options = {code[0] for code, op in OPERATORS.items() if op.arity == Side.BOTH}
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
         self.followers = (ExprStart,)
 
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
-        pass
+        current = ''.join(agg)
+        potential = current + char
+        if potential in self.codes:
+            # Continue aggregation
+            return None
+        return ExprStart(self.expr, self.i)
 
 
 class Die(Binary):
@@ -187,7 +195,7 @@ class OpenParen(State):
         super().__init__(expr, i)
         self.followers = (ExprStart,)
 
-    def next_state(self, char: str) -> Optional['State']:
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
         return ExprStart(self.expr, self.i + 1)
 
     def collect(self, agg: List[str]) -> Optional[Token]:
@@ -201,7 +209,7 @@ class CloseParen(State):
         super().__init__(expr, i)
         self.followers = (ExprEnd,)
 
-    def next_state(self, char: str) -> Optional['State']:
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
         return ExprEnd(self.expr, self.i)
 
     def collect(self, agg: List[str]) -> Optional[Token]:
