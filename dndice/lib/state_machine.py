@@ -1,9 +1,21 @@
 import string
-from typing import Optional, Tuple, List, Type, Set
+from typing import Optional, Tuple, List, Type, Set, Iterable
 
 from .exceptions import ParseError
 from .operators import OPERATORS, Side
 from .tokenizer import Token
+
+
+def tokens(s: str) -> List[Token]:
+    return list(tokens_lazy(s))
+
+
+def tokens_lazy(s: str) -> Iterable[Token]:
+    state = InputStart(s, 0)
+    while not isinstance(state, InputEnd):
+        token, state = state.run()
+        if token is not None:
+            yield token
 
 
 class State:
@@ -14,6 +26,7 @@ class State:
                    | set(string.whitespace))
     followers = tuple()  # type: Tuple[Type[State], ...]
     options = set()  # type: Set[str]
+    consumes = True
     __slots__ = 'expr', 'i'
 
     def __init__(self, expr: str, i: int):
@@ -48,7 +61,7 @@ class State:
             self.i += 1
 
     def next_state(self, char: str) -> Optional['State']:
-        if char in self.options:
+        if self.consumes and char in self.options:
             # Don't move forward yet
             return None
         for typ in self.followers:
@@ -78,6 +91,7 @@ class State:
 
 class ExprStart(State):
     options = State._recognized
+    consumes = False
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -85,6 +99,9 @@ class ExprStart(State):
 
 
 class ExprEnd(State):
+    options = State._recognized
+    consumes = False
+
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
         self.followers = (UnarySuffix, Binary, InputEnd)
@@ -126,12 +143,10 @@ class Binary(Operator):
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
         self.followers = (ExprStart,)
+        self.fullCodes = {code for code, op in OPERATORS.items() if op.arity == Side.BOTH}
 
     def next_state(self, char: str) -> Optional['State']:
-        # Has to deal with multi-character operators
-        pass
-
-    def collect(self, agg: List[str]) -> Optional[Token]:
+        # Has to deal with multi-character operators...
         pass
 
 
@@ -144,7 +159,7 @@ class UnaryPrefix(Operator):
 
 
 class UnarySuffix(Operator):
-    options = set('!')
+    options = '!'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -152,7 +167,7 @@ class UnarySuffix(Operator):
 
 
 class OpenParen(State):
-    options = set('(')
+    options = '('
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -166,7 +181,7 @@ class OpenParen(State):
 
 
 class CloseParen(State):
-    options = set(')')
+    options = ')'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -177,3 +192,56 @@ class CloseParen(State):
 
     def collect(self, agg: List[str]) -> Optional[Token]:
         return ')'
+
+
+class ListToken(State):
+    # Overrides run so doesn't need to override collect or next_state
+    options = '['
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd,)
+
+    def run(self) -> Tuple[Token, 'State']:
+        sides = []
+        state = ListStart(self.expr, self.i)
+        while not isinstance(state, ListEnd):
+            value, state = state.run()
+            if value is not None:
+                sides.append(value)
+        return tuple(sides), ExprEnd(state.expr, state.i)
+
+
+class ListStart(State):
+    options = '['
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ListValue,)
+
+
+class ListValue(State):
+    options = set(string.digits) | set('.')
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ListSeparator, ListEnd)
+
+    def collect(self, agg: List[str]) -> Optional[Token]:
+        return
+
+
+class ListSeparator(State):
+    options = ','
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ListValue,)
+
+
+class ListEnd(State):
+    options = ']'
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd,)
