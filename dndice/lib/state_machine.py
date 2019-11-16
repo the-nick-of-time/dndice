@@ -1,5 +1,5 @@
 import string
-from typing import Optional, Tuple, List, Type, Set, Iterable
+from typing import Optional, Tuple, List, Type, Set, Iterable, Sequence
 
 from .exceptions import ParseError
 from .operators import OPERATORS, Side
@@ -11,6 +11,12 @@ def tokens(s: str) -> List[Token]:
 
 
 def tokens_lazy(s: str) -> Iterable[Token]:
+    opens = s.count('(')
+    closes = s.count(')')
+    if opens > closes:
+        raise ParseError("Unclosed parenthesis detected.", s.find('('), s)
+    if closes > opens:
+        raise ParseError("Unopened parenthesis detected.", s.rfind(')'), s)
     state = InputStart(s, 0)
     while not isinstance(state, InputEnd):
         token, state = state.run()
@@ -26,7 +32,7 @@ class State:
                    | set(string.whitespace))
     followers = tuple()  # type: Tuple[Type[State], ...]
     options = set()  # type: Set[str]
-    consumes = True
+    consumes = 1
     __slots__ = 'expr', 'i'
 
     def __init__(self, expr: str, i: int):
@@ -44,7 +50,11 @@ class State:
                 self.slurp_whitespace()
                 if self.i >= len(self.expr):
                     return self._end_of_input(agg)
-                return self.collect(agg), self.next_state(self.expr[self.i])
+                forward = self.next_state(self.expr[self.i])
+                if forward is None:
+                    # Meaning it's trying to continue the same token
+                    raise ParseError("Token is already broken.", self.i, self.expr)
+                return self.collect(agg), forward
             forward = self.next_state(char)
             if forward:
                 return self.collect(agg), forward
@@ -60,16 +70,16 @@ class State:
         while self.i < len(self.expr) and self.expr[self.i].isspace():
             self.i += 1
 
-    def next_state(self, char: str) -> Optional['State']:
-        if self.consumes and char in self.options:
-            # Don't move forward yet
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        if len(agg) < self.consumes and char in self.options:
+            # Don't move forward yet, just add to the
             return None
         for typ in self.followers:
             if char in typ.options:
                 return typ(self.expr, self.i)
         self._illegal_character(char)
 
-    def collect(self, agg: List[str]) -> Optional[Token]:
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
         """Create a token from the current aggregator.
 
         Returns None if this state does not produce a token. This includes
@@ -82,7 +92,7 @@ class State:
         fmt = "{} is not allowed in this position."
         raise ParseError(fmt.format(char), expr=self.expr, offset=self.i)
 
-    def _end_of_input(self, agg: List[str]):
+    def _end_of_input(self, agg: Sequence[str]):
         if InputEnd in self.followers:
             return self.collect(agg), InputEnd(self.expr, self.i)
         else:
@@ -91,7 +101,7 @@ class State:
 
 class ExprStart(State):
     options = State._recognized
-    consumes = False
+    consumes = 0
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -100,7 +110,7 @@ class ExprStart(State):
 
 class ExprEnd(State):
     options = State._recognized
-    consumes = False
+    consumes = 0
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -129,7 +139,7 @@ class Integer(State):
 
 
 class Operator(State):
-    def collect(self, agg: List[str]) -> Optional[Token]:
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
         s = ''.join(agg)
         if s in OPERATORS:
             return OPERATORS[s]
@@ -138,16 +148,20 @@ class Operator(State):
 
 
 class Binary(Operator):
-    options = {code[0] for code, op in OPERATORS.items() if op.arity == Side.BOTH}
+    options = {code[0]: code for code, op in OPERATORS.items() if op.arity == Side.BOTH}
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
         self.followers = (ExprStart,)
-        self.fullCodes = {code for code, op in OPERATORS.items() if op.arity == Side.BOTH}
 
-    def next_state(self, char: str) -> Optional['State']:
-        # Has to deal with multi-character operators...
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
         pass
+
+
+class Die(Binary):
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (Integer, ListToken, FudgeDie)
 
 
 class UnaryPrefix(Operator):
@@ -174,7 +188,7 @@ class OpenParen(State):
         self.followers = (ExprStart,)
 
     def next_state(self, char: str) -> Optional['State']:
-        return ExprStart(self.expr, self.i)
+        return ExprStart(self.expr, self.i + 1)
 
     def collect(self, agg: List[str]) -> Optional[Token]:
         return '('
@@ -245,3 +259,17 @@ class ListEnd(State):
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
         self.followers = (ExprEnd,)
+
+
+class FudgeDie(State):
+    options = 'F'
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd,)
+
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        return -1, 0, 1
+
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        return ExprEnd(self.expr, self.i + 1)
