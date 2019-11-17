@@ -1,196 +1,308 @@
-"""Split a string into a list of tokens, meaning operators or values.
-
-Only one name is useful to the outside world: ``tokens``. This is the
-function that actually performs the tokenization.
-"""
 import string
-import typing
+from typing import Optional, Tuple, List, Type, Set, Iterable, Sequence, Union
 
 from .exceptions import ParseError
-from .operators import OPERATORS, Operator, Roll, Side
+from .operators import OPERATORS, Side, Roll, Operator
 
-Value = typing.Union[Roll, int, typing.Tuple[float, ...]]
-Token = typing.Union[Value, Operator, str]
-
-
-def _string_to_operator(agg: str, offset: int, expr: str) -> typing.Union[str, Operator]:
-    """Converts a string to the corresponding Operator.
-
-    :param agg: The string that should be an operator.
-    :param offset: The current position in the string.
-    :param expr: The total expression.
-    :raises ParseError: On an invalid operator.
-    :return: The Operator or, if the input was a parenthesis, the original string.
-    """
-    if agg == '(' or agg == ')':
-        return agg
-    if agg not in OPERATORS:
-        raise ParseError("Invalid operator.", offset - len(agg), expr)
-    return OPERATORS[agg]
+Value = Union[Roll, int, Tuple[float, ...]]
+Token = Union[Value, Operator, str]
 
 
-def _read_list(s: str, mode=float) -> typing.Tuple[float, ...]:
-    """Read a list defined in a string."""
-    return tuple(map(mode, map(str.strip, s.split(','))))
+def tokens(s: str) -> List[Token]:
+    return list(tokens_lazy(s))
 
 
-def tokens(s: str) -> typing.List[Token]:
-    """Splits an expression into tokens that can be parsed into an expression tree and evaluated
-
-    The basic algorithm is as follows:
-
-    The number and operator aggregators are initialized to be empty.
-    For each character in the input string,
-
-    #.  If the character is a digit, add the character to the number
-        aggregator. If the operator aggregator is nonempty, build an
-        operator from it and push that operator onto the token list,
-        then empty the operator aggregator.
-
-    #.  If the character is one of the characters that may be part of an
-        operator:
-
-        #.  If the number aggregator is nonempty, build a number from it
-            and push that number onto the token list.
-
-        #.  If the character is '+' or '-', check if it is in a place
-            that makes it look like a sign instead of the arithmetic
-            operator. In general, it is a sign if it does not have a
-            number to its left. However, the code actually checks if it
-            is preceded by nothing (the start of the string) or by an
-            operator. If it should be interpreted as a sign, build the
-            operator from the aggregator if applicable, then push the
-            sign operator directly onto the token list. This leaves the
-            operator aggregator empty.
-
-        #.  If the character can be added to the current aggregator and
-            be a valid operator, or if the aggregator is empty, add the
-            character to the aggregator. This allows us to always build
-            the longest operator in cases where any one character could
-            be ambiguous like '<='. Otherwise they are two separate
-            operators and the aggregator should be built before pushing
-            the new character on.
-
-    #.  If the character is '[', it is the start of a list of dice
-        sides, which can be floats and must be numbers. Read until the
-        corresponding ']' is read and convert the slice into a tuple of
-        floats.
-
-    #.  If the character is 'F', it is the fudge die (-1, 0, or 1). It
-        also has to appear as the sides of a die.
-
-    #.  If the character is whitespace, it is ignored.
-
-    #.  If the character satisfies none of these, it throws a
-        ``ParseError``.
-
-    :param s: The expression to be parsed
-    :return: A list of tokens
-    """
-    # Check for unbalanced parentheses
+def tokens_lazy(s: str) -> Iterable[Token]:
     opens = s.count('(')
     closes = s.count(')')
     if opens > closes:
         raise ParseError("Unclosed parenthesis detected.", s.find('('), s)
     if closes > opens:
         raise ParseError("Unopened parenthesis detected.", s.rfind(')'), s)
-    # Every character that could be part of an operator
-    possibilities = set(''.join(OPERATORS)) - set('p')
-    nums = set(string.digits)
-    curr_num = ''
-    curr_op = ''
-    tokenlist = []
-    i = 0
-    while i < len(s):
-        char = s[i]
-        if char in nums:
-            if curr_op:
-                op = _string_to_operator(curr_op, i, s)
-                tokenlist.append(op)
-                curr_op = ''
-            curr_num += char
-        elif char in possibilities or char in '()':
-            # Things that will end up on the operators stack
-            if curr_num:
-                tokenlist.append(int(curr_num))
-                curr_num = ''
-            # + and - are the unary operators iff they occur at the beginning of an expression
-            # or immediately after another operator
-            if char in '+-' and (i == 0 or (curr_op and curr_op != '!') or tokenlist[-1] == '('
-                                 or (isinstance(tokenlist[-1], Operator)
-                                     and tokenlist[-1].arity & Side.RIGHT)):
-                if curr_op:
-                    tokenlist.append(_string_to_operator(curr_op, i, s))
-                    curr_op = ''
-                if char == '+':
-                    tokenlist.append(_string_to_operator('p', i, s))
-                else:  # char is -
-                    tokenlist.append(_string_to_operator('m', i, s))
+    state = InputStart(s, 0)
+    while not isinstance(state, InputEnd):
+        token, state = state.run()
+        if token is not None:
+            yield token
+
+
+class State:
+    _recognized = (set(''.join(OPERATORS)) - set('p')
+                   | set(string.digits)
+                   | set('.F,')
+                   | set('[]()')
+                   | set(string.whitespace))
+    followers = tuple()  # type: Tuple[Type[State], ...]
+    options = set()  # type: Set[str]
+    consumes = 1
+    __slots__ = 'expr', 'i'
+
+    def __init__(self, expr: str, i: int):
+        self.expr = expr  # type: str
+        self.i = i  # type: int
+
+    def run(self) -> Tuple[Token, 'State']:
+        """Moves along the string to produce the current token."""
+        agg = []
+        while self.i < len(self.expr):
+            char = self.expr[self.i]
+            if self.is_unrecognized(char):
+                raise ParseError("Unrecognized character detected.", self.i, self.expr)
+            if char.isspace():
+                self.slurp_whitespace()
+                if self.i >= len(self.expr):
+                    return self._end_of_input(agg)
+                forward = self.next_state(self.expr[self.i], agg)
+                if forward is None:
+                    # Meaning it's trying to continue the same token
+                    raise ParseError("Token is already broken.", self.i, self.expr)
+                return self.collect(agg), forward
+            forward = self.next_state(char, agg)
+            if forward:
+                return self.collect(agg), forward
             else:
-                if char in '()':
-                    # Parentheses can never be part of an operator, and them occupying space
-                    # there can cause false positives when checking for unary operators
-                    if curr_op:
-                        tokenlist.append(_string_to_operator(curr_op, i, s))
-                        if (isinstance(tokenlist[-1], Operator)
-                                and ((char == ')' and tokenlist[-1].arity & Side.RIGHT)
-                                     or (char == '(' and not tokenlist[
-                                                                 -1].arity & Side.RIGHT))):
-                            raise ParseError('Unexpectedly terminated expression.', i, s)
-                    tokenlist.append(char)
-                    curr_op = ''
-                elif len(curr_op) == 0:
-                    # This is the first time you see an operator since last
-                    # time the list was cleared
-                    curr_op += char
-                elif curr_op + char in OPERATORS:
-                    # This means that the current char is part of a
-                    # multicharacter operation like <=
-                    curr_op += char
-                else:
-                    # Two separate operators; push out the old one and start
-                    # collecting the new one
-                    op = _string_to_operator(curr_op, i, s)
-                    tokenlist.append(op)
-                    curr_op = char
-        elif char == '[':
-            if curr_op not in ('d', 'da', 'dc', 'dm'):
-                raise ParseError("A list can only appear as the sides of a die.", i, s)
-            if curr_op:
-                tokenlist.append(_string_to_operator(curr_op, i, s))
-                curr_op = ''
-            # Start a list of floats
-            sideList = []
-            begin = i
-            i += 1
-            try:
-                while s[i] != ']':
-                    sideList.append(s[i])
-                    i += 1
-            except IndexError as e:
-                raise ParseError("Unterminated die side list.", begin, s) from e
-            try:
-                tokenlist.append(_read_list(''.join(sideList)))
-            except ValueError as e:
-                raise ParseError("All elements of the side list must be numbers.", i, s) from e
-        elif char == 'F':
-            if curr_op not in ('d', 'da', 'dc', 'dm'):
-                raise ParseError("F is the 'fudge dice' value, and must appear as the side "
-                                 "specifier of a roll.", i, s)
-            if curr_op:
-                tokenlist.append(_string_to_operator(curr_op, i, s))
-                curr_op = ''
-            # Fudge die
-            tokenlist.append((-1, 0, 1))
-        elif char.isspace():
-            pass
+                agg.append(char)
+                self.i += 1
+        return self._end_of_input(agg)
+
+    def is_unrecognized(self, char: str) -> bool:
+        return char not in self._recognized
+
+    def slurp_whitespace(self):
+        while self.i < len(self.expr) and self.expr[self.i].isspace():
+            self.i += 1
+
+    def next_state(self, char: str, agg: Sequence[str]) -> Optional['State']:
+        if len(agg) < self.consumes and char in self.options:
+            # Don't move forward yet, just add to the aggregator
+            return None
+        for typ in self.followers:
+            if char in typ.options:
+                return typ(self.expr, self.i)
+        self._illegal_character(char)
+
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        """Create a token from the current aggregator.
+
+        Returns None if this state does not produce a token. This includes
+
+        :param agg: The list of characters that compose this token.
+        """
+        return None
+
+    def _illegal_character(self, char: str):
+        if char == 'F':
+            fmt = "F is the 'fudge dice' value, and must appear as the side specifier of a " \
+                  "roll."
+        elif char == ')':
+            fmt = "Unexpectedly terminated expression."
         else:
-            raise ParseError("Unrecognized character detected.", i, s)
-        i += 1
-    # At most one will be occupied
-    # And the only time neither will be is when the input string is empty
-    if curr_num:
-        tokenlist.append(int(curr_num))
-    elif curr_op:
-        tokenlist.append(_string_to_operator(curr_op, i, s))
-    return tokenlist
+            fmt = "{} is not allowed in this position."
+        raise ParseError(fmt.format(char), expr=self.expr, offset=self.i)
+
+    def _end_of_input(self, agg: Sequence[str]):
+        if InputEnd in self.followers:
+            return self.collect(agg), InputEnd(self.expr, self.i)
+        else:
+            raise ParseError("Unexpected end of expression.", self.i, self.expr)
+
+
+class ExprStart(State):
+    options = State._recognized
+    consumes = 0
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (OpenParen, UnaryPrefix, Integer)
+
+
+class ExprEnd(State):
+    options = State._recognized
+    consumes = 0
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (UnarySuffix, Binary, Die, CloseParen, InputEnd)
+
+
+class InputStart(State):
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprStart, InputEnd)
+
+
+class InputEnd(State):
+    pass
+
+
+class Integer(State):
+    options = set(string.digits)
+    # No one will have a million-digit integer right?
+    consumes = 1e6
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd, InputEnd)
+
+    def collect(self, agg: List[str]) -> Token:
+        return int(''.join(agg))
+
+
+class Operator(State):
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        s = ''.join(agg)
+        if s in OPERATORS:
+            return OPERATORS[s]
+        else:
+            raise ParseError("Invalid operator.", self.i - len(s), self.expr)
+
+
+class Binary(Operator):
+    # All the operator codes
+    codes = {code for code, op in OPERATORS.items() if (op.arity == Side.BOTH
+                                                        and not code.startswith('d'))}
+    # The characters that can start an operator
+    options = {code[0] for code, op in OPERATORS.items() if (op.arity == Side.BOTH
+                                                             and not code.startswith('d'))}
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprStart,)
+
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        current = ''.join(agg)
+        potential = current + char
+        if potential in self.codes or len(agg) == 0:
+            # Continue aggregation
+            return None
+        for typ in self.followers:
+            if char in typ.options:
+                return typ(self.expr, self.i)
+        self._illegal_character(char)
+
+
+class Die(Binary):
+    options = 'd'
+    codes = {code for code in OPERATORS if code.startswith('d')}
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (Integer, ListToken, FudgeDie, OpenParen)
+
+
+class UnaryPrefix(Operator):
+    options = set('+-')
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprStart,)
+
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        token = agg[0]
+        if token == '+':
+            return OPERATORS['p']
+        if token == '-':
+            return OPERATORS['m']
+
+
+class UnarySuffix(Operator):
+    options = '!'
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd, InputEnd)
+
+
+class OpenParen(State):
+    options = '('
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprStart,)
+
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        return ExprStart(self.expr, self.i + 1)
+
+    def collect(self, agg: List[str]) -> Optional[Token]:
+        return '('
+
+
+class CloseParen(State):
+    options = ')'
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd, InputEnd)
+
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        return ExprEnd(self.expr, self.i + 1)
+
+    def collect(self, agg: List[str]) -> Optional[Token]:
+        return ')'
+
+
+class ListToken(State):
+    # Overrides run so doesn't need to override collect or next_state
+    options = '['
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd, InputEnd)
+
+    def run(self) -> Tuple[Token, 'State']:
+        sides = []
+        state = ListStart(self.expr, self.i)
+        while not isinstance(state, ListEnd):
+            value, state = state.run()
+            if value is not None:
+                sides.append(value)
+        return tuple(sides), ExprEnd(state.expr, state.i + 1)
+
+
+class ListStart(State):
+    options = '['
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ListValue,)
+
+
+class ListValue(State):
+    options = set(string.digits) | set('.')
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ListSeparator, ListEnd)
+
+    def collect(self, agg: Sequence[str]) -> Optional[Union[Token, float]]:
+        return float(''.join(agg))
+
+
+class ListSeparator(State):
+    options = ','
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ListValue,)
+
+
+class ListEnd(State):
+    options = ']'
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd, InputEnd)
+
+
+class FudgeDie(State):
+    options = 'F'
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprEnd, InputEnd)
+
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        return -1, 0, 1
+
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        return ExprEnd(self.expr, self.i + 1)

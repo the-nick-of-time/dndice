@@ -1,7 +1,7 @@
 import itertools
 import unittest
 
-from dndice.lib import exceptions, operators, state_machine as tokenizer
+from dndice.lib import exceptions, operators, tokenizer
 
 
 class TokenTester(unittest.TestCase):
