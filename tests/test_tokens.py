@@ -97,10 +97,10 @@ class TokenTester(unittest.TestCase):
     def test_parse_error(self):
         results = {
             "(1d4d2": "Unclosed parenthesis detected.\n    (1d4d2\n    ^",
-            # "1+F": "F is the 'fudge dice' value, and must appear as the side specifier of a "
-            #        "roll.\n    1+F\n      ^",
+            "1+F": "F is the 'fudge dice' value, and must appear as the side specifier of a "
+                   "roll.\n    1+F\n      ^",
             "1+4)": "Unopened parenthesis detected.\n    1+4)\n       ^",
-            # "2*((4+)8)": "Unexpectedly terminated expression.\n    2*((4+)8)\n          ^",
+            "2*((4+)8)": "Unexpectedly terminated expression.\n    2*((4+)8)\n          ^",
         }
         for expr, expected in results.items():
             try:

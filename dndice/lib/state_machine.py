@@ -89,7 +89,13 @@ class State:
         return None
 
     def _illegal_character(self, char: str):
-        fmt = "{} is not allowed in this position."
+        if char == 'F':
+            fmt = "F is the 'fudge dice' value, and must appear as the side specifier of a " \
+                  "roll."
+        elif char == ')':
+            fmt = "Unexpectedly terminated expression."
+        else:
+            fmt = "{} is not allowed in this position."
         raise ParseError(fmt.format(char), expr=self.expr, offset=self.i)
 
     def _end_of_input(self, agg: Sequence[str]):
