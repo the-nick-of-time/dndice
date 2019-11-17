@@ -164,7 +164,7 @@ class Binary(Operator):
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
         current = ''.join(agg)
         potential = current + char
-        if potential in self.codes:
+        if potential in self.codes or len(agg) == 0:
             # Continue aggregation
             return None
         for typ in self.followers:
