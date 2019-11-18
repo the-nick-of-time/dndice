@@ -245,7 +245,15 @@ class Binary(Operator):
         self.followers = (ExprStart,)
 
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
-        """"""
+        """Reads a possibly multi-character operator.
+
+        Overrides because unlike integers, they have finite length and
+        the order is important, and unlike other tokens like
+        parentheses, they may have length greater than one. This
+        requires checking at every step whether the appending of the
+        current character to the current sequence produces a valid
+        operator.
+        """
         current = ''.join(agg)
         potential = current + char
         if potential in self.codes or len(agg) == 0:
