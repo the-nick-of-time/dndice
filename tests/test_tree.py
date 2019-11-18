@@ -189,13 +189,6 @@ class TreeTester(unittest.TestCase):
         with self.assertRaises(InputTypeError):
             tree1 - 1
 
-    def test_parse_failure(self):
-        expr = '4d6+2+'
-        with self.assertRaises(ParseError) as context:
-            EvalTree(expr)
-        self.assertEqual(str(context.exception), 'Failed to construct an expression from the '
-                                                 'token list.')
-
     def test_eval_failure(self):
         expr = '2d20h(7/2)'
         with self.assertRaises(EvaluationError):

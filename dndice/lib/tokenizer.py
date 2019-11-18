@@ -9,10 +9,24 @@ Token = Union[Value, Operator, str]
 
 
 def tokens(s: str) -> List[Token]:
+    """Splits an expression into tokens that can be parsed into an expression tree.
+
+    For specifics, see :ref:`tokens_lazy`.
+
+    :param s: The expression to be parsed
+    :return: A list of tokens
+    """
     return list(tokens_lazy(s))
 
 
 def tokens_lazy(s: str) -> Iterable[Token]:
+    """Splits an expression into tokens that can be parsed into an expression tree.
+
+    This parser is based around a state machine.
+
+    :param s: The expression to be parsed
+    :return: An iterator of tokens
+    """
     opens = s.count('(')
     closes = s.count(')')
     if opens > closes:
@@ -27,29 +41,84 @@ def tokens_lazy(s: str) -> Iterable[Token]:
 
 
 class State:
+    """The base class for all of the states of the tokenizer.
+
+    A number of these states will consume one or more characters to
+    produce a token, but some instead serve as markers. For instance,
+    the ExprStart state marks the start of an expression, which can be
+    followed by a unary prefix operator, an open parenthesis (which will
+    itself start a new expression), or an integer value.
+
+    This base class also provides several constants and simple methods
+    that factor into the algorithms of most or all varieties of states.
+
+    :cvar _recognized: The set of all characters that could be part of
+                       an expression.
+    :cvar options: The set of all characters that can start this token.
+    :cvar consumes: The maximum number of characters this token can
+                    consume.
+    :ivar followers: The set of states that are allowed to follow this
+                     one. This is a sequence of the class objects. It
+                     must be ordered, and if applicable, 'ExprStart'/
+                     'ExprEnd' must come last. Otherwise, anything could
+                     cause a transfer to those marker states. This
+                     should semantically be a class variable; it is not
+                     simply because then it would be evaluated at
+                     definition time and it needs to reference other
+                     class objects which don't exist at that time.
+    """
     _recognized = (set(''.join(OPERATORS)) - set('p')
                    | set(string.digits)
                    | set('.F,')
                    | set('[]()')
                    | set(string.whitespace))
-    followers = tuple()  # type: Tuple[Type[State], ...]
     options = set()  # type: Set[str]
     consumes = 1
-    __slots__ = 'expr', 'i'
+    __slots__ = 'expr', 'i', 'followers'
 
     def __init__(self, expr: str, i: int):
+        """Save the information required to look at the expression.
+
+        :param expr: The string that is being tokenized.
+        :param i: The index in the string at which this token starts.
+        """
         self.expr = expr  # type: str
         self.i = i  # type: int
+        self.followers = tuple()  # type: Tuple[Type[State], ...]
 
-    def run(self) -> Tuple[Token, 'State']:
-        """Moves along the string to produce the current token."""
+    def run(self) -> Tuple[Optional[Token], 'State']:
+        """Moves along the string to produce the current token.
+
+        This base implementation moves along the string, performing the
+        following steps:
+
+        #.  If the current character is not one that is recognized,
+            raise a ParseError.
+        #.  If the current token is whitespace, run along the string
+            until the end of the whitespace, then transfer to the next
+            state. If the ``next_state`` function indicates that the
+            character after the whitespace should be part of the
+            existing one, raise a ParseError.
+        #.  Check if the machine should transfer to the next state using
+            the ``next_state`` function. If yes, return the token that
+            has been collected along with that next state.
+
+        It stops when it encounters the first character of the next
+        token.
+
+        :raise ParseError: If a character is not recognized, or a token
+                           is not allowed in a certain position, or the
+                           expression ends unexpectedly.
+        :return: The pair (the token that this produces if applicable,
+                 the next state)
+        """
         agg = []
         while self.i < len(self.expr):
             char = self.expr[self.i]
-            if self.is_unrecognized(char):
+            if self._is_unrecognized(char):
                 raise ParseError("Unrecognized character detected.", self.i, self.expr)
             if char.isspace():
-                self.slurp_whitespace()
+                self._slurp_whitespace()
                 if self.i >= len(self.expr):
                     return self._end_of_input(agg)
                 forward = self.next_state(self.expr[self.i], agg)
@@ -65,14 +134,15 @@ class State:
                 self.i += 1
         return self._end_of_input(agg)
 
-    def is_unrecognized(self, char: str) -> bool:
-        return char not in self._recognized
-
-    def slurp_whitespace(self):
-        while self.i < len(self.expr) and self.expr[self.i].isspace():
-            self.i += 1
-
     def next_state(self, char: str, agg: Sequence[str]) -> Optional['State']:
+        """Decides what state to transfer to.
+
+        :param char: The current character.
+        :param agg: The sequence of characters that has been identified
+                    as the current token.
+        :return: An instance of the State that will pick up starting
+                 with the current character.
+        """
         if len(agg) < self.consumes and char in self.options:
             # Don't move forward yet, just add to the aggregator
             return None
@@ -84,11 +154,24 @@ class State:
     def collect(self, agg: Sequence[str]) -> Optional[Token]:
         """Create a token from the current aggregator.
 
-        Returns None if this state does not produce a token. This includes
+        Returns None if this state does not produce a token. This is for
+        the "marker" states that correspond to abstract notions of
+        positions in the expression rather than actual concrete tokens.
+
+        This default implementation simply returns None, which is common
+        to all of the marker states while every real token will have its
+        own implementation.
 
         :param agg: The list of characters that compose this token.
         """
         return None
+
+    def _is_unrecognized(self, char: str) -> bool:
+        return char not in self._recognized
+
+    def _slurp_whitespace(self):
+        while self.i < len(self.expr) and self.expr[self.i].isspace():
+            self.i += 1
 
     def _illegal_character(self, char: str):
         if char == 'F':
@@ -108,6 +191,14 @@ class State:
 
 
 class ExprStart(State):
+    """The start of a subexpression.
+
+    Can be followed by:
+
+    - An open parenthesis (which also opens a new expression)
+    - A unary prefix operator (the negative and positive marks)
+    - A number
+    """
     options = State._recognized
     consumes = 0
 
@@ -117,6 +208,17 @@ class ExprStart(State):
 
 
 class ExprEnd(State):
+    """The end of a subexpression.
+
+    Can be followed by:
+
+    - A unary suffix operator (the only existing one is !)
+    - A binary operator
+    - A die expression (which is a subset of the binary operators)
+    - A close parenthesis (which also terminates an enclosing
+      subexpression)
+    - The end of the input string
+    """
     options = State._recognized
     consumes = 0
 
@@ -126,16 +228,29 @@ class ExprEnd(State):
 
 
 class InputStart(State):
+    """The start of the string.
+
+    Can be followed by:
+
+    - The end of the input string, leading to an empty sequence of
+      tokens.
+    - The start of an expression.
+    """
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
         self.followers = (ExprStart, InputEnd)
 
 
 class InputEnd(State):
+    """The end of the string."""
     pass
 
 
 class Integer(State):
+    """A whole number.
+
+    Is followed by the end of an expression.
+    """
     options = set(string.digits)
     # No one will have a million-digit integer right?
     consumes = 1e6
@@ -145,11 +260,18 @@ class Integer(State):
         self.followers = (ExprEnd, InputEnd)
 
     def collect(self, agg: List[str]) -> Token:
+        """Collects the sequence of characters into an int."""
         return int(''.join(agg))
 
 
 class Operator(State):
+    """An incomplete base class for the operators."""
     def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        """Interprets the sequence of characters as an operator.
+
+        :raise ParseError: If the characters don't actually compose a
+                           real operator.
+        """
         s = ''.join(agg)
         if s in OPERATORS:
             return OPERATORS[s]
@@ -158,6 +280,10 @@ class Operator(State):
 
 
 class Binary(Operator):
+    """A binary operator.
+
+    Is followed by the start of an expression.
+    """
     # All the operator codes
     codes = {code for code, op in OPERATORS.items() if (op.arity == Side.BOTH
                                                         and not code.startswith('d'))}
@@ -170,6 +296,7 @@ class Binary(Operator):
         self.followers = (ExprStart,)
 
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        """"""
         current = ''.join(agg)
         potential = current + char
         if potential in self.codes or len(agg) == 0:
@@ -182,6 +309,18 @@ class Binary(Operator):
 
 
 class Die(Binary):
+    """One of the die operators, which are a subset of the binary.
+
+    Can be followed by:
+
+    - A number
+    - A list
+    - The "fudge die"
+    - An open parenthesis. Note that this will not remember that this is
+      the sides of a die and will not therefore allow the special tokens
+      that can only exist as the sides of dice: the fudge die and the
+      side list.
+    """
     options = 'd'
     codes = {code for code in OPERATORS if code.startswith('d')}
 
@@ -191,6 +330,12 @@ class Die(Binary):
 
 
 class UnaryPrefix(Operator):
+    """A unary prefix operator.
+
+    The only ones that exist now are the positive and negative signs.
+
+    Is followed by the start of an expression.
+    """
     options = set('+-')
 
     def __init__(self, expr: str, i: int):
@@ -198,6 +343,10 @@ class UnaryPrefix(Operator):
         self.followers = (ExprStart,)
 
     def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        """Returns the correct unary operator.
+
+        These are special cases to avoid ambiguity in the definitions.
+        """
         token = agg[0]
         if token == '+':
             return OPERATORS['p']
@@ -206,6 +355,12 @@ class UnaryPrefix(Operator):
 
 
 class UnarySuffix(Operator):
+    """A unary suffix operator.
+
+    The only one that exists now is the factorial, !.
+
+    Is followed by the end of an expression.
+    """
     options = '!'
 
     def __init__(self, expr: str, i: int):
@@ -214,6 +369,10 @@ class UnarySuffix(Operator):
 
 
 class OpenParen(State):
+    """An open parenthesis.
+
+    Is followed by the start of an expression.
+    """
     options = '('
 
     def __init__(self, expr: str, i: int):
@@ -221,13 +380,19 @@ class OpenParen(State):
         self.followers = (ExprStart,)
 
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        """Goes directly into the start of an expression."""
         return ExprStart(self.expr, self.i + 1)
 
     def collect(self, agg: List[str]) -> Optional[Token]:
+        """Produces the single character '('."""
         return '('
 
 
 class CloseParen(State):
+    """An closing parenthesis.
+
+    Is followed by the end of an expression.
+    """
     options = ')'
 
     def __init__(self, expr: str, i: int):
@@ -235,13 +400,16 @@ class CloseParen(State):
         self.followers = (ExprEnd, InputEnd)
 
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        """Goes directly into the end of an expression."""
         return ExprEnd(self.expr, self.i + 1)
 
     def collect(self, agg: List[str]) -> Optional[Token]:
+        """Produces the single character '('."""
         return ')'
 
 
 class ListToken(State):
+    """Collects a list of die sides into a single token."""
     # Overrides run so doesn't need to override collect or next_state
     options = '['
 
@@ -250,6 +418,7 @@ class ListToken(State):
         self.followers = (ExprEnd, InputEnd)
 
     def run(self) -> Tuple[Token, 'State']:
+        """Uses a sub-state machine to read the list."""
         sides = []
         state = ListStart(self.expr, self.i)
         while not isinstance(state, ListEnd):
@@ -260,6 +429,10 @@ class ListToken(State):
 
 
 class ListStart(State):
+    """Starts the list.
+
+    Can be followed by a value.
+    """
     options = '['
 
     def __init__(self, expr: str, i: int):
@@ -268,6 +441,10 @@ class ListStart(State):
 
 
 class ListValue(State):
+    """A value in a sides list.
+
+    Can be followed by a list separator or the end of the list.
+    """
     options = set(string.digits) | set('.')
 
     def __init__(self, expr: str, i: int):
@@ -275,10 +452,16 @@ class ListValue(State):
         self.followers = (ListSeparator, ListEnd)
 
     def collect(self, agg: Sequence[str]) -> Optional[Union[Token, float]]:
+        """Collects the sequence of characters into a float."""
+        # TODO: throw a parse error when it can't be interpreted as a float
         return float(''.join(agg))
 
 
 class ListSeparator(State):
+    """The comma that separates the list values.
+
+    Can only be followed by a value.
+    """
     options = ','
 
     def __init__(self, expr: str, i: int):
@@ -287,6 +470,10 @@ class ListSeparator(State):
 
 
 class ListEnd(State):
+    """Ends the list.
+
+    Followed by the end of the expression or string.
+    """
     options = ']'
 
     def __init__(self, expr: str, i: int):
@@ -295,6 +482,10 @@ class ListEnd(State):
 
 
 class FudgeDie(State):
+    """The "fudge die".
+
+    Followed by the end of the expression or string.
+    """
     options = 'F'
 
     def __init__(self, expr: str, i: int):
@@ -302,7 +493,9 @@ class FudgeDie(State):
         self.followers = (ExprEnd, InputEnd)
 
     def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        """Produces the side list [-1, 0, 1]."""
         return -1, 0, 1
 
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        """Goes directly to the end of the expression."""
         return ExprEnd(self.expr, self.i + 1)
