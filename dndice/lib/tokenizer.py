@@ -453,8 +453,11 @@ class ListValue(State):
 
     def collect(self, agg: Sequence[str]) -> Optional[Union[Token, float]]:
         """Collects the sequence of characters into a float."""
-        # TODO: throw a parse error when it can't be interpreted as a float
-        return float(''.join(agg))
+        try:
+            return float(''.join(agg))
+        except ValueError:
+            fmt = "{} cannot be interpreted as a decimal number."
+            raise ParseError(fmt.format(''.join(agg)), self.i - len(agg), self.expr)
 
 
 class ListSeparator(State):
