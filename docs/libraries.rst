@@ -48,5 +48,6 @@ This module is for a few helpful decorators, which have probably been implemente
 
 .. automodule:: dndice.lib.tokenizer
     :members:
+    :member-order: bysource
 
 

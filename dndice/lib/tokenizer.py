@@ -11,7 +11,7 @@ Token = Union[Value, Operator, str]
 def tokens(s: str) -> List[Token]:
     """Splits an expression into tokens that can be parsed into an expression tree.
 
-    For specifics, see :ref:`tokens_lazy`.
+    For specifics, see :py:func:`tokens_lazy`.
 
     :param s: The expression to be parsed
     :return: A list of tokens
@@ -22,7 +22,11 @@ def tokens(s: str) -> List[Token]:
 def tokens_lazy(s: str) -> Iterable[Token]:
     """Splits an expression into tokens that can be parsed into an expression tree.
 
-    This parser is based around a state machine.
+    This parser is based around a state machine. Starting with
+    InputStart, it traverses the string character by character taking on
+    a sequence of states. At each of these states, it asks that state to
+    produce a token if applicable and produce the state that follows it.
+    The token is yielded and the movement of the machine continues.
 
     :param s: The expression to be parsed
     :return: An iterator of tokens
@@ -190,62 +194,6 @@ class State:
             raise ParseError("Unexpected end of expression.", self.i, self.expr)
 
 
-class ExprStart(State):
-    """The start of a subexpression.
-
-    Can be followed by:
-
-    - An open parenthesis (which also opens a new expression)
-    - A unary prefix operator (the negative and positive marks)
-    - A number
-    """
-    options = State._recognized
-    consumes = 0
-
-    def __init__(self, expr: str, i: int):
-        super().__init__(expr, i)
-        self.followers = (OpenParen, UnaryPrefix, Integer)
-
-
-class ExprEnd(State):
-    """The end of a subexpression.
-
-    Can be followed by:
-
-    - A unary suffix operator (the only existing one is !)
-    - A binary operator
-    - A die expression (which is a subset of the binary operators)
-    - A close parenthesis (which also terminates an enclosing
-      subexpression)
-    - The end of the input string
-    """
-    options = State._recognized
-    consumes = 0
-
-    def __init__(self, expr: str, i: int):
-        super().__init__(expr, i)
-        self.followers = (UnarySuffix, Binary, Die, CloseParen, InputEnd)
-
-
-class InputStart(State):
-    """The start of the string.
-
-    Can be followed by:
-
-    - The end of the input string, leading to an empty sequence of
-      tokens.
-    - The start of an expression.
-    """
-    def __init__(self, expr: str, i: int):
-        super().__init__(expr, i)
-        self.followers = (ExprStart, InputEnd)
-
-
-class InputEnd(State):
-    """The end of the string."""
-    pass
-
-
 class Integer(State):
     """A whole number.
 
@@ -266,6 +214,7 @@ class Integer(State):
 
 class Operator(State):
     """An incomplete base class for the operators."""
+
     def collect(self, agg: Sequence[str]) -> Optional[Token]:
         """Interprets the sequence of characters as an operator.
 
@@ -308,27 +257,6 @@ class Binary(Operator):
         self._illegal_character(char)
 
 
-class Die(Binary):
-    """One of the die operators, which are a subset of the binary.
-
-    Can be followed by:
-
-    - A number
-    - A list
-    - The "fudge die"
-    - An open parenthesis. Note that this will not remember that this is
-      the sides of a die and will not therefore allow the special tokens
-      that can only exist as the sides of dice: the fudge die and the
-      side list.
-    """
-    options = 'd'
-    codes = {code for code in OPERATORS if code.startswith('d')}
-
-    def __init__(self, expr: str, i: int):
-        super().__init__(expr, i)
-        self.followers = (Integer, ListToken, FudgeDie, OpenParen)
-
-
 class UnaryPrefix(Operator):
     """A unary prefix operator.
 
@@ -368,44 +296,45 @@ class UnarySuffix(Operator):
         self.followers = (ExprEnd, InputEnd)
 
 
-class OpenParen(State):
-    """An open parenthesis.
+class Die(Binary):
+    """One of the die operators, which are a subset of the binary.
 
-    Is followed by the start of an expression.
+    Can be followed by:
+
+    - A number
+    - A list
+    - The "fudge die"
+    - An open parenthesis. Note that this will not remember that this is
+      the sides of a die and will not therefore allow the special tokens
+      that can only exist as the sides of dice: the fudge die and the
+      side list.
     """
-    options = '('
+    options = 'd'
+    codes = {code for code in OPERATORS if code.startswith('d')}
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
-        self.followers = (ExprStart,)
-
-    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
-        """Goes directly into the start of an expression."""
-        return ExprStart(self.expr, self.i + 1)
-
-    def collect(self, agg: List[str]) -> Optional[Token]:
-        """Produces the single character '('."""
-        return '('
+        self.followers = (Integer, ListToken, FudgeDie, OpenParen)
 
 
-class CloseParen(State):
-    """An closing parenthesis.
+class FudgeDie(State):
+    """The "fudge die" value.
 
-    Is followed by the end of an expression.
+    Followed by the end of the expression or string.
     """
-    options = ')'
+    options = 'F'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
         self.followers = (ExprEnd, InputEnd)
 
-    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
-        """Goes directly into the end of an expression."""
-        return ExprEnd(self.expr, self.i + 1)
+    def collect(self, agg: Sequence[str]) -> Optional[Token]:
+        """Produces the side list [-1, 0, 1]."""
+        return -1, 0, 1
 
-    def collect(self, agg: List[str]) -> Optional[Token]:
-        """Produces the single character '('."""
-        return ')'
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        """Goes directly to the end of the expression."""
+        return ExprEnd(self.expr, self.i + 1)
 
 
 class ListToken(State):
@@ -484,21 +413,97 @@ class ListEnd(State):
         self.followers = (ExprEnd, InputEnd)
 
 
-class FudgeDie(State):
-    """The "fudge die".
+class OpenParen(State):
+    """An open parenthesis.
 
-    Followed by the end of the expression or string.
+    Is followed by the start of an expression.
     """
-    options = 'F'
+    options = '('
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprStart,)
+
+    def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
+        """Goes directly into the start of an expression."""
+        return ExprStart(self.expr, self.i + 1)
+
+    def collect(self, agg: List[str]) -> Optional[Token]:
+        """Produces the single character '('."""
+        return '('
+
+
+class CloseParen(State):
+    """An closing parenthesis.
+
+    Is followed by the end of an expression.
+    """
+    options = ')'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
         self.followers = (ExprEnd, InputEnd)
 
-    def collect(self, agg: Sequence[str]) -> Optional[Token]:
-        """Produces the side list [-1, 0, 1]."""
-        return -1, 0, 1
-
     def next_state(self, char: str, agg: Sequence[str] = None) -> Optional['State']:
-        """Goes directly to the end of the expression."""
+        """Goes directly into the end of an expression."""
         return ExprEnd(self.expr, self.i + 1)
+
+    def collect(self, agg: List[str]) -> Optional[Token]:
+        """Produces the single character '('."""
+        return ')'
+
+
+class ExprStart(State):
+    """The start of a subexpression.
+
+    Can be followed by:
+
+    - An open parenthesis (which also opens a new expression)
+    - A unary prefix operator (the negative and positive marks)
+    - A number
+    """
+    options = State._recognized
+    consumes = 0
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (OpenParen, UnaryPrefix, Integer)
+
+
+class ExprEnd(State):
+    """The end of a subexpression.
+
+    Can be followed by:
+
+    - A unary suffix operator (the only existing one is !)
+    - A binary operator
+    - A die expression (which is a subset of the binary operators)
+    - A close parenthesis (which also terminates an enclosing
+      subexpression)
+    - The end of the input string
+    """
+    options = State._recognized
+    consumes = 0
+
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (UnarySuffix, Binary, Die, CloseParen, InputEnd)
+
+
+class InputStart(State):
+    """The start of the string.
+
+    Can be followed by:
+
+    - The end of the input string, leading to an empty sequence of
+      tokens.
+    - The start of an expression.
+    """
+    def __init__(self, expr: str, i: int):
+        super().__init__(expr, i)
+        self.followers = (ExprStart, InputEnd)
+
+
+class InputEnd(State):
+    """The end of the string."""
+    pass
