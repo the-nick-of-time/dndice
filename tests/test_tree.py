@@ -288,6 +288,20 @@ class TreeTester(unittest.TestCase):
         self.assertEqual(tree.verbose_result(), '1+' + str(Roll([1, 20, 1, 20], 20)) + ' = 43')
         tree = EvalTree(None)
         self.assertEqual(tree.verbose_result(), '')
+        root = EvalTreeNode(OPERATORS['m'],
+                            None,
+                            EvalTreeNode(4))
+        tree.root = root
+        self.assertEqual(tree.verbose_result(), '-4 = -4')
+        # The other unary operator, !, has a high enough precedence to
+        # be evaluated before printing so it isn't shown
+        root = EvalTreeNode(OPERATORS['*'],
+                            EvalTreeNode(2),
+                            EvalTreeNode(OPERATORS['+'],
+                                         EvalTreeNode(4),
+                                         EvalTreeNode(8)))
+        tree.root = root
+        self.assertEqual(tree.verbose_result(), '2*(4+8) = 24')
 
 
 if __name__ == '__main__':

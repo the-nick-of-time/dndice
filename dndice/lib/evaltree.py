@@ -6,6 +6,7 @@ is the basic component.
 """
 import typing
 import copy
+from typing import List
 
 from .tokenizer import Token, tokens
 from .exceptions import InputTypeError, EvaluationError, ParseError
@@ -296,12 +297,16 @@ class EvalTree:
         """Perform an in-order traversal to build the string of the result."""
         if current.is_leaf() or current.payload.precedence >= threshold:
             return str(current.value)
-        # TODO: fails on unary operators
-        return (('(' if parent and parent.payload > current.payload else '')
-                + self.__verbose_result_recursive(current.left, threshold, current)
-                + str(current.payload)
-                + self.__verbose_result_recursive(current.right, threshold, current)
-                + (')' if parent and parent.payload > current.payload else ''))
+        segments = []  # type: List[str]
+        if current.left:
+            segments.append(self.__verbose_result_recursive(current.left, threshold, current))
+        segments.append(str(current.payload))
+        if current.right:
+            segments.append(self.__verbose_result_recursive(current.right, threshold, current))
+        if parent and parent.payload > current.payload:
+            segments.insert(0, '(')
+            segments.append(')')
+        return ''.join(segments)
 
     def pre_order(self, abort=None) -> typing.Generator[EvalTreeNode, None, None]:
         """Perform a pre-order/breadth-first traversal of the tree."""
