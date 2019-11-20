@@ -4,7 +4,7 @@ exclude_lines =
     \.\.\.$
     def __repr__
     if __name__ == ["']__main__['"]
-
+fail_under = 90
 
 [run]
 source =
