@@ -19,7 +19,7 @@ test:
 	nose2 --verbose
 
 coverage:
-	coverage run venv/bin/nose2 --verbose
+	coverage run -m nose2 --verbose
 	coverage report
 	coverage html
 	firefox htmlcov/index.html
