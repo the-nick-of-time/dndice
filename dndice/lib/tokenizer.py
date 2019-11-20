@@ -13,7 +13,7 @@ Value = typing.Union[Roll, int, typing.Tuple[float, ...]]
 Token = typing.Union[Value, Operator, str]
 
 
-def _string_to_operator(agg: str, offset: int, expr: str) -> typing.Union[str, Operator]:
+def _string_to_operator(agg: str, offset: int, expr: str) -> Operator:
     """Converts a string to the corresponding Operator.
 
     :param agg: The string that should be an operator.
@@ -22,8 +22,6 @@ def _string_to_operator(agg: str, offset: int, expr: str) -> typing.Union[str, O
     :raises ParseError: On an invalid operator.
     :return: The Operator or, if the input was a parenthesis, the original string.
     """
-    if agg == '(' or agg == ')':
-        return agg
     if agg not in OPERATORS:
         raise ParseError("Invalid operator.", offset - len(agg), expr)
     return OPERATORS[agg]
