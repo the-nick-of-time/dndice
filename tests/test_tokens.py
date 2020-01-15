@@ -55,7 +55,8 @@ class TokenTester(unittest.TestCase):
     def test_whitespace(self):
         results = {
             "2 + 5": [2, operators.OPERATORS['+'], 5],
-            "2 + -  6": [2, operators.OPERATORS['+'], operators.OPERATORS['m'], 6]
+            "2 + -  6": [2, operators.OPERATORS['+'], operators.OPERATORS['m'], 6],
+            "     \t  \n ": [],
         }
         for s, tok in results.items():
             self.assertEqual(tokenizer.tokens(s), tok)
