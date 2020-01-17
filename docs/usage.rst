@@ -34,10 +34,10 @@ Operator definitions
 | c                     | *ROLL*\ **c**\ *n*                          | After making a roll, treat any value that is greater than *n* as |
 |                       |                                             | *n*.                                                             |
 +-----------------------+---------------------------------------------+------------------------------------------------------------------+
-| r or ro               | *ROLL*\ **ro**\ *n*                         | After making a roll, look at all of them and reroll any that are |
+| r                     | *ROLL*\ **r**\ *n*                          | After making a roll, look at all of them and reroll any that are |
 |                       |                                             | equal to *n*, reroll those, and take the result.                 |
 +-----------------------+---------------------------------------------+------------------------------------------------------------------+
-| R or Ro               | *ROLL*\ **Ro**\ *n*                         | After making a roll, look at all of them and reroll any that are |
+| R                     | *ROLL*\ **R**\ *n*                          | After making a roll, look at all of them and reroll any that are |
 |                       |                                             | equal to *n* and reroll those. If that number comes up again,    |
 |                       |                                             | continue rerolling until you get something different.            |
 +-----------------------+---------------------------------------------+------------------------------------------------------------------+
