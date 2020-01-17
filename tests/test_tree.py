@@ -281,6 +281,13 @@ class TreeTester(unittest.TestCase):
         self.assertEqual(tree.verbose_result(), '1+' + str(Roll([1, 20, 1, 20], 20)) + ' = 43')
         tree = EvalTree(None)
         self.assertEqual(tree.verbose_result(), '')
+        root = EvalTreeNode(OPERATORS['m'],
+                            None,
+                            EvalTreeNode(OPERATORS['!'],
+                                         EvalTreeNode(5)))
+        tree.root = root
+        # it evaluates ! before display because of its high precedence
+        self.assertEqual(tree.verbose_result(), '-120 = -120')
 
 
 if __name__ == '__main__':

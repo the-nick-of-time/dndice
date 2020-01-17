@@ -296,12 +296,17 @@ class EvalTree:
         """Perform an in-order traversal to build the string of the result."""
         if current.is_leaf() or current.payload.precedence >= threshold:
             return str(current.value)
-        # TODO: fails on unary operators
-        return (('(' if parent and parent.payload > current.payload else '')
-                + self.__verbose_result_recursive(current.left, threshold, current)
-                + str(current.payload)
-                + self.__verbose_result_recursive(current.right, threshold, current)
-                + (')' if parent and parent.payload > current.payload else ''))
+        result = ''
+        if parent and parent.payload > current.payload:
+            result += '('
+        if current.left:
+            result += self.__verbose_result_recursive(current.left, threshold, current)
+        result += str(current.payload)
+        if current.right:
+            result += self.__verbose_result_recursive(current.right, threshold, current)
+        if parent and parent.payload > current.payload:
+            result += ')'
+        return result
 
     def pre_order(self, abort=None) -> typing.Generator[EvalTreeNode, None, None]:
         """Perform a pre-order/breadth-first traversal of the tree."""
