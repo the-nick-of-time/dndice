@@ -29,19 +29,16 @@ class RollError(Exception):
 class ParseError(RollError, ValueError):
     """The roll expression cannot be parsed into an expression tree."""
 
-    def __init__(self, msg, offset=None, expr=None):
+    def __init__(self, msg, offset, expr):
         self.msg = msg
         self.character = offset
         self.expr = expr
         self.indent = 4
 
     def __str__(self):
-        if self.character is not None and self.expr is not None:
-            fmt = "{msg}\n{indent}{expr}\n{indent}{spaces}^"
-            return fmt.format(expr=self.expr, msg=self.msg, spaces=" " * self.character,
-                              indent=" " * self.indent)
-        else:
-            return self.msg
+        fmt = "{msg}\n{indent}{expr}\n{indent}{spaces}^"
+        return fmt.format(expr=self.expr, msg=self.msg, spaces=" " * self.character,
+                          indent=" " * self.indent)
 
     def __repr__(self):
         return self.__str__()

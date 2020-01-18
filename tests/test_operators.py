@@ -1,6 +1,5 @@
 import unittest
 from unittest import mock
-import operator
 
 from dndice.lib import exceptions, operators
 

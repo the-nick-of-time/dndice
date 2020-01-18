@@ -78,6 +78,7 @@ class TokenTester(unittest.TestCase):
     def test_list(self):
         results = {
             "1d[1,5,9]": [1, operators.OPERATORS['d'], (1, 5, 9)],
+            "1d[1.5,5,9]": [1, operators.OPERATORS['d'], (1.5, 5, 9)],
         }
         for s, tok in results.items():
             self.assertEqual(tokenizer.tokens(s), tok)
@@ -102,6 +103,10 @@ class TokenTester(unittest.TestCase):
                    "roll.\n    1+F\n      ^",
             "1+4)": "Unopened parenthesis detected.\n    1+4)\n       ^",
             "2*((4+)8)": "Unexpectedly terminated expression.\n    2*((4+)8)\n          ^",
+            "1 > = 4": "Token is already broken.\n    1 > = 4\n        ^",
+            "4d6rhl6": "l is not allowed in this position.\n    4d6rhl6\n         ^",
+            "1d[1.4.4,2]": "1.4.4 cannot be interpreted as a decimal number.\n"
+                           "    1d[1.4.4,2]\n       ^",
         }
         for expr, expected in results.items():
             try:

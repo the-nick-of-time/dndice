@@ -1,7 +1,8 @@
 """Split a string into a list of tokens, meaning operators or values.
 
-Only one name is useful to the outside world: ``tokens``. This is the
-function that actually performs the tokenization.
+Two functions may be useful to the outside: ``tokens`` and
+``tokens_lazy``. ``tokens`` returns a list of the tokens, while
+``tokens_lazy`` is a generator
 """
 import string
 from typing import Optional, Tuple, List, Type, Set, Iterable, Sequence, Union
@@ -230,6 +231,8 @@ class Operator(State):
         if s in OPERATORS:
             return OPERATORS[s]
         else:
+            # Should be impossible due to next_state filtering down to
+            # valid operators only
             raise ParseError("Invalid operator.", self.i - len(s), self.expr)
 
 
@@ -267,6 +270,11 @@ class Binary(Operator):
         for typ in self.followers:
             if char in typ.options:
                 return typ(self.expr, self.i)
+        # should be impossible because characters that don't go into the
+        # current operator get captured by `ExprStart` in the `for`
+        # captures anything that could be a valid portion of a token,
+        # while `State._is_unrecognized` captures characters that aren't
+        # allowed
         self._illegal_character(char)
 
 
@@ -388,6 +396,7 @@ class ListValue(State):
     Can be followed by a list separator or the end of the list.
     """
     options = set(string.digits) | set('.')
+    consumes = 1e6
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
