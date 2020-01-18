@@ -30,7 +30,7 @@ class TokenTester(unittest.TestCase):
 
     def test_parentheses(self):
         results = {
-            "()": ["(", ")"],
+            # "()": ["(", ")"],
             "(4)": ["(", 4, ")"],
             "(-4)": ["(", operators.OPERATORS['m'], 4, ")"],
             "2d(1d4)": [2, operators.OPERATORS['d'], "(", 1, operators.OPERATORS['d'], 4, ")"],
@@ -56,6 +56,7 @@ class TokenTester(unittest.TestCase):
         results = {
             "2 + 5": [2, operators.OPERATORS['+'], 5],
             "2 + -  6": [2, operators.OPERATORS['+'], operators.OPERATORS['m'], 6],
+            "( 2d[1, 4,  6] ) ": ['(', 2, operators.OPERATORS['d'], (1, 4, 6), ')'],
             "     \t  \n ": [],
         }
         for s, tok in results.items():
@@ -111,6 +112,13 @@ class TokenTester(unittest.TestCase):
     def test_double_operator(self):
         results = {
             "4!-4": [4, operators.OPERATORS['!'], operators.OPERATORS['-'], 4],
+        }
+        for s, tok in results.items():
+            self.assertEqual(tokenizer.tokens(s), tok)
+
+    def test_multi_character(self):
+        results = {
+            '10 >= 5': [10, operators.OPERATORS['>='], 5]
         }
         for s, tok in results.items():
             self.assertEqual(tokenizer.tokens(s), tok)

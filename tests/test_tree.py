@@ -189,13 +189,6 @@ class TreeTester(unittest.TestCase):
         with self.assertRaises(InputTypeError):
             tree1 - 1
 
-    def test_parse_failure(self):
-        expr = '4d6+2+'
-        with self.assertRaises(ParseError) as context:
-            EvalTree(expr)
-        self.assertEqual(str(context.exception), 'Failed to construct an expression from the '
-                                                 'token list.')
-
     def test_eval_failure(self):
         expr = '2d20h(7/2)'
         with self.assertRaises(EvaluationError):
@@ -302,6 +295,13 @@ class TreeTester(unittest.TestCase):
                                          EvalTreeNode(8)))
         tree.root = root
         self.assertEqual(tree.verbose_result(), '2*(4+8) = 24')
+        root = EvalTreeNode(OPERATORS['m'],
+                            None,
+                            EvalTreeNode(OPERATORS['!'],
+                                         EvalTreeNode(5)))
+        tree.root = root
+        # it evaluates ! before display because of its high precedence
+        self.assertEqual(tree.verbose_result(), '-120 = -120')
 
 
 if __name__ == '__main__':
