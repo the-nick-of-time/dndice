@@ -64,7 +64,7 @@ class State:
 
     :cvar _recognized: The set of all characters that could be part of
                        an expression.
-    :cvar options: The set of all characters that can start this token.
+    :cvar starters: The set of all characters that can start this token.
     :cvar consumes: The maximum number of characters this token can
                     consume.
     :ivar followers: The set of states that are allowed to follow this
@@ -82,7 +82,7 @@ class State:
                    | set('.F,')
                    | set('[]()')
                    | set(string.whitespace))
-    options = set()  # type: Set[str]
+    starters = set()  # type: Set[str]
     consumes = 1
     __slots__ = 'expr', 'i', 'followers'
 
@@ -153,11 +153,11 @@ class State:
         :return: An instance of the State that will pick up starting
                  with the current character.
         """
-        if len(agg) < self.consumes and char in self.options:
+        if len(agg) < self.consumes and char in self.starters:
             # Don't move forward yet, just add to the aggregator
             return None
         for typ in self.followers:
-            if char in typ.options:
+            if char in typ.starters:
                 return typ(self.expr, self.i)
         self._illegal_character(char)
 
@@ -205,7 +205,7 @@ class Integer(State):
 
     Is followed by the end of an expression.
     """
-    options = set(string.digits)
+    starters = set(string.digits)
     # No one will have a million-digit integer right?
     consumes = 1e6
 
@@ -245,8 +245,8 @@ class Binary(Operator):
     codes = {code for code, op in OPERATORS.items() if (op.arity == Side.BOTH
                                                         and not code.startswith('d'))}
     # The characters that can start an operator
-    options = {code[0] for code, op in OPERATORS.items() if (op.arity == Side.BOTH
-                                                             and not code.startswith('d'))}
+    starters = {code[0] for code, op in OPERATORS.items() if (op.arity == Side.BOTH
+                                                              and not code.startswith('d'))}
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -268,7 +268,7 @@ class Binary(Operator):
             # Continue aggregation
             return None
         for typ in self.followers:
-            if char in typ.options:
+            if char in typ.starters:
                 return typ(self.expr, self.i)
         # should be impossible because characters that don't go into the
         # current operator get captured by `ExprStart` in the `for`
@@ -285,7 +285,7 @@ class UnaryPrefix(Operator):
 
     Is followed by the start of an expression.
     """
-    options = set('+-')
+    starters = set('+-')
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -310,7 +310,7 @@ class UnarySuffix(Operator):
 
     Is followed by the end of an expression.
     """
-    options = '!'
+    starters = '!'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -330,7 +330,7 @@ class Die(Binary):
       that can only exist as the sides of dice: the fudge die and the
       side list.
     """
-    options = 'd'
+    starters = 'd'
     codes = {code for code in OPERATORS if code.startswith('d')}
 
     def __init__(self, expr: str, i: int):
@@ -343,7 +343,7 @@ class FudgeDie(State):
 
     Followed by the end of the expression or string.
     """
-    options = 'F'
+    starters = 'F'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -361,7 +361,7 @@ class FudgeDie(State):
 class ListToken(State):
     """Collects a list of die sides into a single token."""
     # Overrides run so doesn't need to override collect or next_state
-    options = '['
+    starters = '['
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -383,7 +383,7 @@ class ListStart(State):
 
     Can be followed by a value.
     """
-    options = '['
+    starters = '['
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -395,7 +395,7 @@ class ListValue(State):
 
     Can be followed by a list separator or the end of the list.
     """
-    options = set(string.digits) | set('.')
+    starters = set(string.digits) | set('.')
     consumes = 1e6
 
     def __init__(self, expr: str, i: int):
@@ -416,7 +416,7 @@ class ListSeparator(State):
 
     Can only be followed by a value.
     """
-    options = ','
+    starters = ','
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -428,7 +428,7 @@ class ListEnd(State):
 
     Followed by the end of the expression or string.
     """
-    options = ']'
+    starters = ']'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -440,7 +440,7 @@ class OpenParen(State):
 
     Is followed by the start of an expression.
     """
-    options = '('
+    starters = '('
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -460,7 +460,7 @@ class CloseParen(State):
 
     Is followed by the end of an expression.
     """
-    options = ')'
+    starters = ')'
 
     def __init__(self, expr: str, i: int):
         super().__init__(expr, i)
@@ -484,7 +484,7 @@ class ExprStart(State):
     - A unary prefix operator (the negative and positive marks)
     - A number
     """
-    options = State._recognized
+    starters = State._recognized
     consumes = 0
 
     def __init__(self, expr: str, i: int):
@@ -504,7 +504,7 @@ class ExprEnd(State):
       subexpression)
     - The end of the input string
     """
-    options = State._recognized
+    starters = State._recognized
     consumes = 0
 
     def __init__(self, expr: str, i: int):
