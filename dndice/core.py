@@ -138,16 +138,7 @@ def tokenize(expr: typing.Union[str, int, float], modifiers=0) -> typing.List[To
         semantics are like (expr)+modifiers.
     :return: The list of tokens.
     """
-    if isinstance(expr, (int, float)):
-        if modifiers != 0:
-            return [expr, OPERATORS['+'], modifiers]
-        return [expr]
-    if not isinstance(expr, str):
-        raise InputTypeError("You can only tokenize a string expression or a number.")
-    tok = tokens(expr)
-    if modifiers != 0:
-        tok = ['(', *tok, ')', OPERATORS['+'], modifiers]
-    return tok
+    return list(tokenize_lazy(expr, modifiers))
 
 
 def tokenize_lazy(expr: typing.Union[str, int, float], modifiers=0) -> typing.Iterator[Token]:
