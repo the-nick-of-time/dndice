@@ -10,4 +10,4 @@ an expression tree for evaluation.
 """
 
 # Hoist some core names straight into the public namespace
-from .core import basic, verbose, Mode, compile, tokenize
+from .core import basic, verbose, Mode, compile, tokenize, tokenize_lazy

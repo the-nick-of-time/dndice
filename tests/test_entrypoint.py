@@ -1,7 +1,7 @@
 import itertools
 import unittest
 
-from dndice import basic, Mode, compile, tokenize, verbose
+from dndice import basic, Mode, compile, tokenize, verbose, tokenize_lazy
 from dndice.lib.evaltree import EvalTree, EvalTreeNode
 from dndice.lib.operators import OPERATORS, random, Roll
 from dndice.lib.exceptions import InputTypeError
@@ -84,6 +84,37 @@ class TestCoreFunctions(unittest.TestCase):
         self.assertEqual(Mode.from_string('maximum'), Mode.MAX)
         self.assertEqual(Mode.from_string('normal'), Mode.NORMAL)
         self.assertEqual(Mode.from_string('random'), Mode.NORMAL)
+
+    def test_lazy(self):
+        iterator = tokenize_lazy('3d4+2')
+        self.assertEqual(next(iterator), 3)
+        self.assertEqual(next(iterator), OPERATORS['d'])
+        self.assertEqual(next(iterator), 4)
+        self.assertEqual(next(iterator), OPERATORS['+'])
+        self.assertEqual(next(iterator), 2)
+        self.assertRaises(StopIteration, lambda: next(iterator))
+        iterator = tokenize_lazy('3d4+2', 1)
+        self.assertEqual(next(iterator), '(')
+        self.assertEqual(next(iterator), 3)
+        self.assertEqual(next(iterator), OPERATORS['d'])
+        self.assertEqual(next(iterator), 4)
+        self.assertEqual(next(iterator), OPERATORS['+'])
+        self.assertEqual(next(iterator), 2)
+        self.assertEqual(next(iterator), ')')
+        self.assertEqual(next(iterator), OPERATORS['+'])
+        self.assertEqual(next(iterator), 1)
+        self.assertRaises(StopIteration, lambda: next(iterator))
+        iterator = tokenize_lazy(1)
+        self.assertEqual(next(iterator), 1)
+        self.assertRaises(StopIteration, lambda: next(iterator))
+        iterator = tokenize_lazy(1, 1)
+        self.assertEqual(next(iterator), 1)
+        self.assertEqual(next(iterator), OPERATORS['+'])
+        self.assertEqual(next(iterator), 1)
+        self.assertRaises(StopIteration, lambda: next(iterator))
+        with self.assertRaises(InputTypeError):
+            iterator = tokenize_lazy([40, 2])
+            next(iterator)
 
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ else:
     # module version
     from .lib.exceptions import InputTypeError
     from .lib.operators import OPERATORS
-    from .lib.tokenizer import tokens, Token
+    from .lib.tokenizer import tokens, tokens_lazy, Token
     from .lib.evaltree import EvalTree, EvalTreeNode
 
 
@@ -148,6 +148,31 @@ def tokenize(expr: typing.Union[str, int, float], modifiers=0) -> typing.List[To
     if modifiers != 0:
         tok = ['(', *tok, ')', OPERATORS['+'], modifiers]
     return tok
+
+
+def tokenize_lazy(expr: typing.Union[str, int, float], modifiers=0) -> typing.Iterator[Token]:
+    """Split a string into tokens and yield them lazily.
+
+    :param expr: The string to be parsed.
+    :param modifiers: A value to be added on at the very end. The
+        semantics are like (expr)+modifiers.
+    :return: An iterable of the tokens parsed from the string.
+    """
+    if isinstance(expr, (int, float)):
+        yield expr
+        if modifiers != 0:
+            yield OPERATORS['+']
+            yield modifiers
+        return
+    if not isinstance(expr, str):
+        raise InputTypeError("You can only tokenize a string expression or a number.")
+    if modifiers != 0:
+        yield '('
+    yield from tokens_lazy(expr)
+    if modifiers != 0:
+        yield ')'
+        yield OPERATORS['+']
+        yield modifiers
 
 
 if __name__ == '__main__':
