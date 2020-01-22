@@ -2,7 +2,7 @@ import itertools
 import unittest
 
 from dndice.lib.evaltree import EvalTreeNode, EvalTree
-from dndice.lib.exceptions import ParseError, EvaluationError, InputTypeError
+from dndice.lib.exceptions import EvaluationError, InputTypeError
 from dndice.lib.operators import OPERATORS, random, Roll
 
 
@@ -302,6 +302,8 @@ class TreeTester(unittest.TestCase):
         tree.root = root
         # it evaluates ! before display because of its high precedence
         self.assertEqual(tree.verbose_result(), '-120 = -120')
+        tree = EvalTree('1+(2*4)')
+        self.assertEqual(tree.verbose_result(), '1+2*4 = 9')
 
 
 if __name__ == '__main__':
