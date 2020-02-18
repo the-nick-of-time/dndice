@@ -287,7 +287,8 @@ class EvalTree:
                              abort: Predicate) \
             -> typing.Iterable[EvalTreeNode]:
         """Recurse through the tree."""
-        if abort(current):
+        if current.is_leaf() or abort(current):
+            yield current
             return
         if parent and parent.payload > current.payload:
             yield EvalTreeNode('(')
@@ -308,33 +309,25 @@ class EvalTree:
         :return: A string representation of the result, showing the
             results from rolls.
         """
+
+        def to_string(node: EvalTreeNode) -> str:
+            if isinstance(node.payload, str):
+                return node.payload
+            if node.is_leaf() or node.payload.precedence >= 6:
+                return str(node.value)
+            return str(node.payload)
         if self.root is None:
             return ''
         if self.root.value is None:
             self.evaluate()
-        base = self.__verbose_result_recursive(self.root, 6)
+        tokens = [to_string(node) for node in
+                  self.in_order(lambda node: node.payload.precedence >= 6)]
+        base = ''.join(tokens)
         try:
             final = sum(self.root.value)
         except TypeError:
             final = self.root.value
         return base + ' = ' + str(final)
-
-    def __verbose_result_recursive(self, current: EvalTreeNode, threshold: int,
-                                   parent: typing.Optional[EvalTreeNode] = None) -> str:
-        """Perform an in-order traversal to build the string of the result."""
-        if current.is_leaf() or current.payload.precedence >= threshold:
-            return str(current.value)
-        result = ''
-        if parent and parent.payload > current.payload:
-            result += '('
-        if current.left:
-            result += self.__verbose_result_recursive(current.left, threshold, current)
-        result += str(current.payload)
-        if current.right:
-            result += self.__verbose_result_recursive(current.right, threshold, current)
-        if parent and parent.payload > current.payload:
-            result += ')'
-        return result
 
     def pre_order(self, abort=None) -> typing.Iterable[EvalTreeNode]:
         """Perform a pre-order/breadth-first traversal of the tree."""
