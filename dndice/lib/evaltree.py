@@ -271,6 +271,34 @@ class EvalTree:
             node.left = values.pop()
         values.append(node)
 
+    def in_order(self, abort=None) -> typing.Iterable[EvalTreeNode]:
+        """Perform an in-order/infix traversal of the tree.
+
+        This includes a minimal set of parentheses such that the
+        original tree can be constructed from the results of this
+        iterator.
+        """
+        if abort is not None:
+            return self.__in_order_recursive(self.root, None, abort)
+        else:
+            return self.__in_order_recursive(self.root, None, lambda node: False)
+
+    def __in_order_recursive(self, current: EvalTreeNode, parent: typing.Optional[EvalTreeNode],
+                             abort: Predicate) \
+            -> typing.Iterable[EvalTreeNode]:
+        """Recurse through the tree."""
+        if abort(current):
+            return
+        if parent and parent.payload > current.payload:
+            yield EvalTreeNode('(')
+        if current.left:
+            yield from self.__in_order_recursive(current.left, current, abort)
+        yield current
+        if current.right:
+            yield from self.__in_order_recursive(current.right, current, abort)
+        if parent and parent.payload > current.payload:
+            yield EvalTreeNode(')')
+
     def verbose_result(self) -> str:
         """Forms an infix string of the result, looking like the original with rolls evaluated.
 
@@ -308,7 +336,7 @@ class EvalTree:
             result += ')'
         return result
 
-    def pre_order(self, abort=None) -> typing.Generator[EvalTreeNode, None, None]:
+    def pre_order(self, abort=None) -> typing.Iterable[EvalTreeNode]:
         """Perform a pre-order/breadth-first traversal of the tree."""
         if abort is not None:
             return self.__pre_order_recursive(self.root, abort)
@@ -316,7 +344,7 @@ class EvalTree:
             return self.__pre_order_recursive(self.root, lambda node: False)
 
     def __pre_order_recursive(self, current: EvalTreeNode, abort: Predicate) -> \
-            typing.Generator[EvalTreeNode, None, None]:
+            typing.Iterable[EvalTreeNode]:
         """Recurse through the tree."""
         yield current
         if not abort(current):
