@@ -4,14 +4,13 @@
 functionality for looking at the tree as a unit, while ``EvalTreeNode``
 is the basic component.
 """
-import typing
 import copy
-from typing import List
+import typing
 
-from .tokenizer import Token, tokens
 from .exceptions import InputTypeError, EvaluationError, ParseError
 from .helpers import wrap_exceptions_with
 from .operators import OPERATORS, Roll, Operator, Side
+from .tokenizer import Token, tokens
 
 Result = typing.Union[Roll, int, float]
 Final = typing.Union[int, float]
@@ -88,11 +87,11 @@ class EvalTree:
         """
         self.root = None  # type: typing.Optional[EvalTreeNode]
         if isinstance(source, str):
-            self.from_tokens(tokens(source))
+            self.__from_tokens(tokens(source))
         elif isinstance(source, EvalTree):
             self.root = source.root
         elif isinstance(source, list):
-            self.from_tokens(source)
+            self.__from_tokens(source)
         elif isinstance(source, (int, float)):
             self.root = EvalTreeNode(source)
         elif source is None:
@@ -222,7 +221,7 @@ class EvalTree:
             return final
 
     @wrap_exceptions_with(ParseError, 'Failed to construct an expression from the token list.')
-    def from_tokens(self, tokens: typing.List[Token]) -> None:
+    def __from_tokens(self, tokens: typing.List[Token]) -> None:
         """Construct the expression tree formed from the infix token list.
 
         This uses a `shunting-yard algorithm
