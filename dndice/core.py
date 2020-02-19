@@ -3,15 +3,15 @@ import typing
 
 if __name__ == '__main__':
     # script version
-    from lib.exceptions import InputTypeError
-    from lib.operators import OPERATORS
-    from lib.tokenizer import tokens, Token
-    from lib.evaltree import EvalTree, EvalTreeNode
+    from dndice.lib.exceptions import InputTypeError
+    from dndice.lib.operators import OPERATORS
+    from dndice.lib.tokenizer import Token
+    from dndice.lib.evaltree import EvalTree, EvalTreeNode
 else:
     # module version
     from .lib.exceptions import InputTypeError
     from .lib.operators import OPERATORS
-    from .lib.tokenizer import tokens, tokens_lazy, Token
+    from .lib.tokenizer import tokens_lazy, Token
     from .lib.evaltree import EvalTree, EvalTreeNode
 
 

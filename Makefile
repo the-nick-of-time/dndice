@@ -43,7 +43,4 @@ compatibility: Dockerfile $(sources) $(tests)
 	docker build -t dndice_compat . && docker run --rm --name rolling_test dndice_compat
 
 clean:
-	rm -rf docs/_build/
-	rm -rf dist/
-	rm -rf htmlcov/
-	rm -f .coverage
+	git clean -xdf -e '/venv' -e '/.idea'
