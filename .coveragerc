@@ -9,6 +9,3 @@ fail_under = 90
 [run]
 source =
     dndice
-
-omit =
-    dndice/roller.py

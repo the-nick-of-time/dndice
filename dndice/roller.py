@@ -34,12 +34,12 @@ def parse() -> argparse.Namespace:
 def main():
     args = parse()
     mode = Mode.NORMAL
-    if args.average:
-        mode = Mode.AVERAGE
+    if args.maximum:
+        mode = Mode.MAX
     elif args.critical:
         mode = Mode.CRIT
-    elif args.maximum:
-        mode = Mode.MAX
+    elif args.average:
+        mode = Mode.AVERAGE
     func = basic
     if args.verbose:
         func = verbose
