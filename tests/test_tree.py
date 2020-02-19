@@ -305,6 +305,12 @@ class TreeTester(unittest.TestCase):
         tree = EvalTree('1+(2*4)')
         self.assertEqual(tree.verbose_result(), '1+2*4 = 9')
 
+    def test_in_order_roundtrip(self):
+        tree = EvalTree('(2)*(4+8)')
+        tokens = [node.payload for node in tree.in_order()]
+        reconstructed = EvalTree(tokens)
+        self.assertEqual(tree, reconstructed)
+
 
 if __name__ == '__main__':
     unittest.main()
