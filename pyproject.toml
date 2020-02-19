@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dndice"
-version = "2.5.1"
+version = "2.6.0"
 description = "An engine to parse and evaluate D&D-inspired roll expressions"
 authors = ["Nick Thurmes <nthurmes@gmail.com>"]
 license = "GPL-2.0-or-later"
