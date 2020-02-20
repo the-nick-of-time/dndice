@@ -3,8 +3,8 @@ import unittest
 
 from dndice import basic, Mode, compile, tokenize, verbose, tokenize_lazy
 from dndice.lib.evaltree import EvalTree, EvalTreeNode
-from dndice.lib.operators import OPERATORS, random, Roll
 from dndice.lib.exceptions import InputTypeError
+from dndice.lib.operators import OPERATORS, random, Roll
 
 
 def trees_equal(a: EvalTree, b: EvalTree) -> bool:
@@ -32,49 +32,73 @@ class TestCoreFunctions(unittest.TestCase):
             basic([40, 2])
 
     def test_compile(self):
-        expr = '3d4'
-        tree = compile(expr)
+        tree = compile('3d4')
         expected = EvalTree(None)
         expected.root = EvalTreeNode(OPERATORS['d'],
                                      EvalTreeNode(3),
                                      EvalTreeNode(4))
         self.assertEqual(tree, expected)
+
+    def test_compile_modifier(self):
+        expected = EvalTree(None)
         expected.root = EvalTreeNode(OPERATORS['+'],
                                      EvalTreeNode(OPERATORS['d'],
                                                   EvalTreeNode(3),
                                                   EvalTreeNode(4)),
                                      EvalTreeNode(2))
-        self.assertEqual(compile(expr, 2), expected)
+        self.assertEqual(compile('3d4', 2), expected)
+
+    def test_compile_int(self):
+        expected = EvalTree(None)
         expected.root = EvalTreeNode(2)
         self.assertEqual(compile(2), expected)
         expected.root = EvalTreeNode(OPERATORS['+'],
                                      EvalTreeNode(2),
                                      EvalTreeNode(4))
         self.assertEqual(compile(2, 4), expected)
+
+    def test_compile_wrong_type(self):
         with self.assertRaises(InputTypeError):
             compile([40, 2])
 
     def test_verbose(self):
         expected = '{roll}+2 = 14'.format(roll=Roll([4, 4, 4], 4))
         self.assertEqual(verbose('3d4 + 2'), expected)
+
+    def test_verbose_modifier(self):
         expected = '{roll}+2+1 = 15'.format(roll=Roll([4, 4, 4], 4))
         self.assertEqual(verbose('3d4 + 2', modifiers=1), expected)
+
+    def test_verbose_average(self):
         expected = '{}+2 = 9.5'.format(Roll([2.5, 2.5, 2.5], 4))
         self.assertEqual(verbose('3d4+2', mode=Mode.AVERAGE), expected)
+
+    def test_verbose_max(self):
         expected = '{}+2 = 20'.format(Roll([6, 6, 6], 6))
         self.assertEqual(verbose('3d6+2', mode=Mode.MAX), expected)
+
+    def test_verbose_crit(self):
         expected = '{}+2 = 26'.format(Roll([4, 4, 4, 4, 4, 4], 4))
         self.assertEqual(verbose('3d4+2', mode=Mode.CRIT), expected)
+
+    def test_verbose_wrong_type(self):
         with self.assertRaises(InputTypeError):
             verbose([40, 2])
 
     def test_tokenize(self):
-        expr = '3d4+2'
-        self.assertEqual(tokenize(expr), [3, OPERATORS['d'], 4, OPERATORS['+'], 2])
+        self.assertEqual(tokenize('3d4+2'), [3, OPERATORS['d'], 4, OPERATORS['+'], 2])
+
+    def test_tokenize_modifier(self):
         toks = ['(', 3, OPERATORS['d'], 4, OPERATORS['+'], 2, ')', OPERATORS['+'], 2]
-        self.assertEqual(tokenize(expr, 2), toks)
+        self.assertEqual(tokenize('3d4+2', 2), toks)
+
+    def test_tokenize_int(self):
         self.assertEqual(tokenize(1), [1])
+
+    def test_tokenize_int_modifier(self):
         self.assertEqual(tokenize(1, 1), [1, OPERATORS['+'], 1])
+
+    def test_tokenize_wrong_type(self):
         with self.assertRaises(InputTypeError):
             tokenize([40, 2])
 
@@ -93,6 +117,8 @@ class TestCoreFunctions(unittest.TestCase):
         self.assertEqual(next(iterator), OPERATORS['+'])
         self.assertEqual(next(iterator), 2)
         self.assertRaises(StopIteration, lambda: next(iterator))
+
+    def test_lazy_modifier(self):
         iterator = tokenize_lazy('3d4+2', 1)
         self.assertEqual(next(iterator), '(')
         self.assertEqual(next(iterator), 3)
@@ -104,14 +130,20 @@ class TestCoreFunctions(unittest.TestCase):
         self.assertEqual(next(iterator), OPERATORS['+'])
         self.assertEqual(next(iterator), 1)
         self.assertRaises(StopIteration, lambda: next(iterator))
+
+    def test_lazy_int(self):
         iterator = tokenize_lazy(1)
         self.assertEqual(next(iterator), 1)
         self.assertRaises(StopIteration, lambda: next(iterator))
+
+    def test_lazy_int_modifier(self):
         iterator = tokenize_lazy(1, 1)
         self.assertEqual(next(iterator), 1)
         self.assertEqual(next(iterator), OPERATORS['+'])
         self.assertEqual(next(iterator), 1)
         self.assertRaises(StopIteration, lambda: next(iterator))
+
+    def test_lazy_wrong_type(self):
         with self.assertRaises(InputTypeError):
             iterator = tokenize_lazy([40, 2])
             next(iterator)

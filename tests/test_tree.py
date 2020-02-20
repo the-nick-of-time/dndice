@@ -45,17 +45,27 @@ class TreeTester(unittest.TestCase):
         node.evaluate()
         self.assertEqual(node.payload, node.value)
 
-    def test_tree_prefab(self):
+    def test_tree_from_tokens(self):
         fromTokens = EvalTree([4, OPERATORS['d'], 6])
         expected = EvalTree(None)
         expected.root = EvalTreeNode(OPERATORS['d'],
                                      EvalTreeNode(4),
                                      EvalTreeNode(6))
         self.assertEqual(fromTokens, expected)
-        fromExisting = EvalTree(fromTokens)
-        self.assertEqual(fromExisting, fromTokens)
+
+    def test_tree_from_existing(self):
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(OPERATORS['d'],
+                                     EvalTreeNode(4),
+                                     EvalTreeNode(6))
+        fromExisting = EvalTree(expected)
+        self.assertEqual(fromExisting, expected)
+
+    def test_tree_wrong_type(self):
         with self.assertRaises(InputTypeError):
             EvalTree({'invalid'})
+
+    def test_empty_tree_evaluate(self):
         self.assertEqual(EvalTree(None).evaluate(), 0)
 
     def test_tree_simple_parse(self):
@@ -112,6 +122,8 @@ class TreeTester(unittest.TestCase):
                                                   EvalTreeNode(8),
                                                   EvalTreeNode(5)))
         self.assertEqual(tree, expected)
+
+    def test_tree_unnecessary_parentheses(self):
         expr = '2*((8)+(4))'
         tree = EvalTree(expr)
         expected = EvalTree(None)
@@ -150,13 +162,30 @@ class TreeTester(unittest.TestCase):
         tree.evaluate()
         self.assertEqual(tree1, tree1copy)
         self.assertTrue(tree_empty(tree1))
+
+    def test_tree_in_place_addition(self):
+        expr1 = '2d20'
+        tree1 = EvalTree(expr1)
+        expr2 = '5+3'
+        tree2 = EvalTree(expr2)
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(OPERATORS['+'],
+                                     EvalTreeNode(OPERATORS['d'],
+                                                  EvalTreeNode(2),
+                                                  EvalTreeNode(20)),
+                                     EvalTreeNode(OPERATORS['+'],
+                                                  EvalTreeNode(5),
+                                                  EvalTreeNode(3)))
         # Also test in-place concatenation
         tree1 += tree2
         self.assertEqual(tree1, expected)
+
+    def test_tree_addition_wrong_type(self):
+        tree = EvalTree('2d20')
         with self.assertRaises(InputTypeError):
-            tree1 += 1
+            tree += 1
         with self.assertRaises(InputTypeError):
-            tree1 + 1
+            tree + 1
 
     def test_tree_subtraction(self):
         expr1 = '2d20'
@@ -181,13 +210,31 @@ class TreeTester(unittest.TestCase):
         tree.evaluate()
         self.assertEqual(tree1, tree1copy)
         self.assertTrue(tree_empty(tree1))
+
+    def test_tree_in_place_subtraction(self):
+        expr1 = '2d20'
+        tree1 = EvalTree(expr1)
+        expr2 = '5+3'
+        tree2 = EvalTree(expr2)
         # Also test in-place concatenation
         tree1 -= tree2
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(OPERATORS['-'],
+                                     EvalTreeNode(OPERATORS['d'],
+                                                  EvalTreeNode(2),
+                                                  EvalTreeNode(20)),
+                                     EvalTreeNode(OPERATORS['+'],
+                                                  EvalTreeNode(5),
+                                                  EvalTreeNode(3)))
         self.assertEqual(tree1, expected)
+
+    def test_tree_subtraction_wrong_type(self):
+        expr = '2d20'
+        tree = EvalTree(expr)
         with self.assertRaises(InputTypeError):
-            tree1 -= 1
+            tree -= 1
         with self.assertRaises(InputTypeError):
-            tree1 - 1
+            tree - 1
 
     def test_eval_failure(self):
         expr = '2d20h(7/2)'
@@ -270,7 +317,7 @@ class TreeTester(unittest.TestCase):
             if not isinstance(origNode.payload, int):
                 self.assertIsNot(origNode.payload, copyNode.payload)
 
-    def test_print(self):
+    def test_print_roll(self):
         root = EvalTreeNode(OPERATORS['+'],
                             EvalTreeNode(1),
                             EvalTreeNode(OPERATORS['d'],
@@ -279,29 +326,42 @@ class TreeTester(unittest.TestCase):
         tree = EvalTree(None)
         tree.root = root
         self.assertEqual(tree.verbose_result(), '1+' + str(Roll([1, 20, 1, 20], 20)) + ' = 43')
+
+    def test_print_empty(self):
         tree = EvalTree(None)
         self.assertEqual(tree.verbose_result(), '')
+
+    def test_print_unary(self):
         root = EvalTreeNode(OPERATORS['m'],
                             None,
                             EvalTreeNode(4))
+        tree = EvalTree(None)
         tree.root = root
         self.assertEqual(tree.verbose_result(), '-4 = -4')
         # The other unary operator, !, has a high enough precedence to
         # be evaluated before printing so it isn't shown
+
+    def test_print_parentheses(self):
         root = EvalTreeNode(OPERATORS['*'],
                             EvalTreeNode(2),
                             EvalTreeNode(OPERATORS['+'],
                                          EvalTreeNode(4),
                                          EvalTreeNode(8)))
+        tree = EvalTree(None)
         tree.root = root
         self.assertEqual(tree.verbose_result(), '2*(4+8) = 24')
+
+    def test_print_high_precedence(self):
         root = EvalTreeNode(OPERATORS['m'],
                             None,
                             EvalTreeNode(OPERATORS['!'],
                                          EvalTreeNode(5)))
+        tree = EvalTree(None)
         tree.root = root
         # it evaluates ! before display because of its high precedence
         self.assertEqual(tree.verbose_result(), '-120 = -120')
+
+    def test_print_unnecessary_parentheses(self):
         tree = EvalTree('1+(2*4)')
         self.assertEqual(tree.verbose_result(), '1+2*4 = 9')
 
