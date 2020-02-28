@@ -14,6 +14,7 @@ build: coverage docs
 
 publish: build
 	poetry publish
+	COVERALLS_REPO_TOKEN=`cat coveralls_token` coveralls
 
 view-docs: docs
 	firefox docs/_build/html/index.html
@@ -43,4 +44,4 @@ compatibility: Dockerfile $(sources) $(tests)
 	docker build -t dndice_compat . && docker run --rm --name rolling_test dndice_compat
 
 clean:
-	git clean -xdf -e '/venv' -e '/.idea'
+	git clean -xdf -e '/venv' -e '/.idea' -e '/coveralls_token'

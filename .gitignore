@@ -9,3 +9,5 @@
 /.coverage
 # virtualenv
 /venv/
+# coverage badge token
+/coveralls_token
