@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.5"
+before_install:
+  - pip install poetry
+install:
+  - poetry install
+script:
+  - make build
+after_success:
+  - coveralls
