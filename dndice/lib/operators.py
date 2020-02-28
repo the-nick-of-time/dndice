@@ -17,6 +17,7 @@ implement the operations defined here.
 import enum
 import random
 import typing
+from contextlib import contextmanager
 from copy import deepcopy
 
 from .exceptions import ArgumentTypeError, ArgumentValueError
@@ -173,8 +174,8 @@ class Roll:
     update to it. However, sometimes the index of a particular element
     does matter, like with the ``reroll_unconditional`` class of
     functions that repeatedly perform in-place replacements on those
-    elements. Therefore you have the chance to enable and disable this
-    auto-sorting.
+    elements. Therefore you have the chance to temporarily disable
+    sorting for the duration of these modifications.
 
     This object can be treated like a list in many ways, implementing
     get/set/delitem methods, len, and iter.
@@ -228,12 +229,27 @@ class Roll:
         if not self.__disableSorting:
             self.__rolls.sort()
 
-    def enable_sorting(self):
-        self.__disableSorting = False
-        self.__rolls.sort()
+    @contextmanager
+    def sorting_disabled(self):
+        """Temporarily disable auto-sorting.
 
-    def disable_sorting(self):
-        self.__disableSorting = True
+        This is a context manager, so is used with the ``with``
+        statement. For example: ::
+
+            with roll.sorting_disabled():
+                while i < len(original):
+                    while comp(roll[i], target):
+                        roll.replace(i, single_die(roll.die))
+                    i += 1
+
+        The example is taken straight from ``reroll_unconditional`` below.
+        """
+        try:
+            self.__disableSorting = True
+            yield self
+        finally:
+            self.__disableSorting = False
+            self.__rolls.sort()
 
     @wrap_exceptions_with(ArgumentValueError, 'Index out of bounds', IndexError)
     def discard(self, index: typing.Union[int, slice]):
@@ -442,12 +458,11 @@ def reroll_once(original: Roll, target: Number,
     """
     modified = original.copy()
     i = 0
-    modified.disable_sorting()
-    while i < len(original):
-        if comp(modified[i], target):
-            modified.replace(i, single_die(modified.die))
-        i += 1
-    modified.enable_sorting()
+    with modified.sorting_disabled():
+        while i < len(original):
+            if comp(modified[i], target):
+                modified.replace(i, single_die(modified.die))
+            i += 1
     return modified
 
 
@@ -463,12 +478,11 @@ def reroll_unconditional(original: Roll, target: Number,
     """
     modified = original.copy()
     i = 0
-    modified.disable_sorting()
-    while i < len(original):
-        while comp(modified[i], target):
-            modified.replace(i, single_die(modified.die))
-        i += 1
-    modified.enable_sorting()
+    with modified.sorting_disabled():
+        while i < len(original):
+            while comp(modified[i], target):
+                modified.replace(i, single_die(modified.die))
+            i += 1
     return modified
 
 
@@ -527,12 +541,11 @@ def floor_val(original: Roll, bottom: Number) -> Roll:
     """
     modified = original.copy()
     i = 0
-    modified.disable_sorting()
-    while i < len(original):
-        if modified[i] < bottom:
-            modified.replace(i, bottom)
-        i += 1
-    modified.enable_sorting()
+    with modified.sorting_disabled():
+        while i < len(original):
+            if modified[i] < bottom:
+                modified.replace(i, bottom)
+            i += 1
     return modified
 
 
@@ -545,12 +558,11 @@ def ceil_val(original: Roll, top: Number) -> Roll:
     """
     modified = original.copy()
     i = 0
-    modified.disable_sorting()
-    while i < len(original):
-        if modified[i] > top:
-            modified.replace(i, top)
-        i += 1
-    modified.enable_sorting()
+    with modified.sorting_disabled():
+        while i < len(original):
+            if modified[i] > top:
+                modified.replace(i, top)
+            i += 1
     return modified
 
 
