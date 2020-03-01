@@ -3,5 +3,5 @@
 venv/
 dist/
 htmlcov/
-rolling.egg-info/
+*.egg-info/
 docs/
