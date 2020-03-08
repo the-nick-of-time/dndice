@@ -241,7 +241,7 @@ class EvalTree:
                 operators.append(t)
             elif t == ')':
                 while operators[-1] != '(':
-                    self.one_operation(operators, expression)
+                    self.__one_operation(operators, expression)
                 operators.pop()
             else:
                 while (len(operators)
@@ -249,14 +249,14 @@ class EvalTree:
                        and (operators[-1] > t
                             or (operators[-1].precedence == t.precedence
                                 and operators[-1].associativity == Side.LEFT))):
-                    self.one_operation(operators, expression)
+                    self.__one_operation(operators, expression)
                 operators.append(t)
         while len(operators):
-            self.one_operation(operators, expression)
+            self.__one_operation(operators, expression)
         self.root = expression.pop() if len(expression) else EvalTreeNode(0)
 
     @staticmethod
-    def one_operation(ops: typing.List[Operator], values: typing.List[EvalTreeNode]):
+    def __one_operation(ops: typing.List[Operator], values: typing.List[EvalTreeNode]):
         """Pop the top operator and give it the top one or two subtrees from the values stack.
         Then push the resulting subtree onto the values stack for application in future.
 
