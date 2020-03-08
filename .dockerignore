@@ -5,3 +5,8 @@ dist/
 htmlcov/
 *.egg-info/
 docs/
+pyproject.toml
+poetry.lock
+README.md
+LICENSE
+.travis.yml

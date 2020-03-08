@@ -1,4 +1,5 @@
-FROM python:3.5-alpine
+ARG image=python:3.5-alpine
+FROM ${image}
 
 ADD dndice/ /dndice
 ADD tests/ /tests

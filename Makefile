@@ -40,7 +40,9 @@ htmlcov/index.html: .coverage
 	coverage html
 
 compatibility: Dockerfile $(sources) $(tests)
-	docker build -t dndice_compat . && docker run --rm --name rolling_test dndice_compat
+	for v in "python:3.5-alpine" "python:3.8-alpine" "jamiehewland/alpine-pypy:3.6-alpine3.11" ; do \
+	docker build -t dndice_compat --build-arg image="$$v" . && docker run --rm --name rolling_test dndice_compat ; \
+	done
 
 clean:
 	git clean -xdf -e '/venv' -e '/.idea'
