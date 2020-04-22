@@ -42,6 +42,28 @@ class EvalTreeNode:
         self.right = right  # type: EvalTreeNode
         self.value = None  # type: typing.Optional[Result]
 
+    def __repr__(self):
+        def recursive(current: EvalTreeNode, depth: int) -> str:
+            if current is None:
+                return repr(current)
+            if current.is_leaf():
+                return 'EvalTreeNode({}, {}, {})'.format(current.payload,
+                                                         current.left,
+                                                         current.right)
+            return ('EvalTreeNode({payload},\n'
+                    '{indent}{left},\n'
+                    '{indent}{right}\n'
+                    '{short})').format(
+                payload=current.payload,
+                left=recursive(current.left, depth + 1),
+                right=recursive(current.right, depth + 1),
+                indent=' ' * len('EvalTreeNode(') * depth,
+                short=' ' * (len('EvalTreeNode(') * depth - 1),
+                align=' ' * len('EvalTreeNode(')
+            )
+
+        return recursive(self, 1)
+
     def evaluate(self) -> Result:
         """Recursively evaluate this subtree and return its computed value.
 
@@ -170,6 +192,9 @@ class EvalTree:
         if isinstance(other, EvalTree):
             return self.__in_place_concat(OPERATORS['-'], other)
         raise InputTypeError('Cannot subtract a {} from an EvalTree.'.format(type(other)))
+
+    def __repr__(self):
+        return 'EvalTree("{}")'.format(''.join(str(node.payload) for node in self.in_order()))
 
     def __concat(self, operation: Operator, other: 'EvalTree') -> 'EvalTree':
         new = self.copy()
