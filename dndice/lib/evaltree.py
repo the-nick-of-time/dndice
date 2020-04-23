@@ -43,6 +43,7 @@ class EvalTreeNode:
         self.value = None  # type: typing.Optional[Result]
 
     def __repr__(self):
+        """Produce a string that could be used to reconstruct this node."""
         def recursive(current: EvalTreeNode, depth: int) -> str:
             if current is None:
                 return repr(current)
@@ -194,6 +195,7 @@ class EvalTree:
         raise InputTypeError('Cannot subtract a {} from an EvalTree.'.format(type(other)))
 
     def __repr__(self):
+        """Produce a string that can be used to reconstruct this tree."""
         return 'EvalTree("{}")'.format(''.join(str(node.payload) for node in self.in_order()))
 
     def __concat(self, operation: Operator, other: 'EvalTree') -> 'EvalTree':
