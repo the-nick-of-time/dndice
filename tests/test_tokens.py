@@ -26,7 +26,8 @@ class TokenTester(unittest.TestCase):
             if op.arity == operators.Side.BOTH
         }
         for s, tok in itertools.chain(unary.items(), binary.items()):
-            self.assertEqual(tokenizer.tokens(s), tok)
+            self.assertEqual(tokenizer.tokens(s), tok,
+                             '{} was supposed to parse into {}'.format(s, tok))
 
     def test_parentheses(self):
         results = {
@@ -39,7 +40,8 @@ class TokenTester(unittest.TestCase):
                               operators.OPERATORS['+'], "(", 8, ")", ")"]
         }
         for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok)
+            self.assertEqual(tokenizer.tokens(s), tok,
+                             '{} was supposed to parse into {}'.format(s, tok))
 
     def test_precedence(self):
         results = {
@@ -50,7 +52,8 @@ class TokenTester(unittest.TestCase):
                       operators.OPERATORS['p'], 6]
         }
         for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok)
+            self.assertEqual(tokenizer.tokens(s), tok,
+                             '{} was supposed to parse into {}'.format(s, tok))
 
     def test_whitespace(self):
         results = {
@@ -60,7 +63,8 @@ class TokenTester(unittest.TestCase):
             "     \t  \n ": [],
         }
         for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok)
+            self.assertEqual(tokenizer.tokens(s), tok,
+                             '{} was supposed to parse into {}'.format(s, tok))
 
     def test_error(self):
         cases = [
@@ -119,14 +123,16 @@ class TokenTester(unittest.TestCase):
             "4!-4": [4, operators.OPERATORS['!'], operators.OPERATORS['-'], 4],
         }
         for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok)
+            self.assertEqual(tokenizer.tokens(s), tok,
+                             '{} was supposed to parse into {}'.format(s, tok))
 
     def test_multi_character(self):
         results = {
             '10 >= 5': [10, operators.OPERATORS['>='], 5]
         }
         for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok)
+            self.assertEqual(tokenizer.tokens(s), tok,
+                             '{} was supposed to parse into {}'.format(s, tok))
 
 
 if __name__ == '__main__':
