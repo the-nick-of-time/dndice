@@ -299,7 +299,7 @@ class UnaryPrefix(Operator):
         token = agg[0]
         if token == '+':
             return OPERATORS['p']
-        if token == '-':
+        if token == '-':  # pragma: no branch
             return OPERATORS['m']
 
 
