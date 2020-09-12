@@ -139,6 +139,23 @@ class TreeTester(unittest.TestCase):
         expected.root = EvalTreeNode(3)
         self.assertEqual(tree, expected)
 
+    def test_unary_prefix(self):
+        expr = '+3'
+        tree = EvalTree(expr)
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(OPERATORS['p'],
+                                     None,
+                                     EvalTreeNode(3))
+        self.assertEqual(tree, expected)
+
+    def test_unary_suffix(self):
+        expr = '4!'
+        tree = EvalTree(expr)
+        expected = EvalTree(None)
+        expected.root = EvalTreeNode(OPERATORS['!'],
+                                     EvalTreeNode(4))
+        self.assertEqual(tree, expected)
+
     def test_tree_addition(self):
         expr1 = '2d20'
         tree1 = EvalTree(expr1)

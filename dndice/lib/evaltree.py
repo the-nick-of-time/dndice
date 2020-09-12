@@ -248,7 +248,7 @@ class EvalTree:
             return final
 
     @wrap_exceptions_with(ParseError, 'Failed to construct an expression from the token list.')
-    def __from_tokens(self, tokens: typing.List[Token]) -> None:
+    def __from_tokens(self, tokens: typing.Sequence[Token]) -> None:
         """Construct the expression tree formed from the infix token list.
 
         This uses a `shunting-yard algorithm

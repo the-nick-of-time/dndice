@@ -166,10 +166,18 @@ class TestDeterministicFunctions(unittest.TestCase):
         self.assertEqual(result.rolls, [1, 2])
         self.assertEqual(result.discards, [3, 4, 5, 6])
 
+        result = operators.take_low(self.roll, 7)
+        self.assertEqual(result.rolls, [1, 2, 3, 4, 5, 6])
+        self.assertEqual(result.discards, [])
+
     def test_take_high(self):
         result = operators.take_high(self.roll, 2)
         self.assertEqual(result.rolls, [5, 6])
         self.assertEqual(result.discards, [1, 2, 3, 4])
+
+        result = operators.take_high(self.roll, 7)
+        self.assertEqual(result.rolls, [1, 2, 3, 4, 5, 6])
+        self.assertEqual(result.discards, [])
 
     def test_floor_val(self):
         result = operators.floor_val(self.roll, 3)

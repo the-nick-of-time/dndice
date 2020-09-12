@@ -137,7 +137,7 @@ class TestMain(TestCase):
     @patch.object(roller, 'parse', Mock(return_value=base_args(verbose=True)))
     @patch.object(roller, 'compile', Mock(return_value=sentinel))
     @patch.object(roller, 'verbose')
-    def test_wrap_off(self, verbose):
+    def test_verbose(self, verbose):
         verbose.return_value = '5 = 5'
         roller.main()
         self.assertEqual(self.stdout.getvalue().strip(), '5 = 5')
