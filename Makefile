@@ -18,10 +18,19 @@ publish: build
 view-docs: docs
 	firefox docs/_build/html/index.html
 
-docs: docs/_build/html/index.html
+docs: docs-$(docs_format)
 
+docs-html: docs/_build/html/index.html
 docs/_build/html/index.html: $(documentation) $(sources)
-	sphinx-build -b $(docs_format) -D html_theme=$(docs_theme) "docs" "docs/_build/$(docs_format)"
+	sphinx-build -b html -D html_theme=$(docs_theme) "docs" "docs/_build/html"
+
+docs-man: docs/_build/man/dndice.1
+docs/_build/man/dndice.1: $(documentation) $(sources)
+	sphinx-build -b man "docs" "docs/_build/man"
+
+docs-epub: docs/_build/epub/dndice.epub
+docs/_build/epub/dndice.epub: $(documentation) $(sources)
+	sphinx-build -b epub "docs" "docs/_build/epub"
 
 # Intentionally have no prerequisites; should be able to run tests even if nothing has changed
 test:
