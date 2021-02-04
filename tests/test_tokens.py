@@ -109,11 +109,14 @@ class TokenTester(unittest.TestCase):
             "1d[1.4.4,2]": "1.4.4 cannot be interpreted as a decimal number.\n"
                            "    1d[1.4.4,2]\n       ^",
         }
-        for expr, expected in results.items():
+        def run_assertion(expr, expected):
             try:
                 tokenizer.tokens(expr)
+                self.fail("{} should have failed to parse".format(expr))
             except exceptions.ParseError as e:
                 self.assertEqual(str(e), expected)
+        for expr, expected in results.items():
+            yield run_assertion, expr, expected
 
     def test_double_operator(self):
         results = {
