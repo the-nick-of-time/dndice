@@ -19,8 +19,7 @@ class TokenTester(unittest.TestCase):
             "": [],
             "20": [20],
         }
-        for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok)
+        yield from self.token_conversions_mass_test(results.items())
 
     def test_single_ops(self):
         unary = {
@@ -74,9 +73,11 @@ class TokenTester(unittest.TestCase):
             '1a4',
             '1x4',
         ]
-        for s in cases:
+        def run_assertion(s):
             with self.assertRaises(exceptions.ParseError):
                 tokenizer.tokens(s)
+        for s in cases:
+            yield run_assertion, s
 
     def test_list(self):
         results = {
@@ -84,8 +85,12 @@ class TokenTester(unittest.TestCase):
             "1d[1.5,5,9]": [1, operators.OPERATORS['d'], (1.5, 5, 9)],
         }
         yield from self.token_conversions_mass_test(results.items())
+
+    def test_list_misplaced(self):
         with self.assertRaises(exceptions.ParseError):
             tokenizer.tokens("[4,5,6]+3")
+
+    def test_list_wrong_value(self):
         with self.assertRaises(exceptions.ParseError):
             tokenizer.tokens("1d[4, 5, b]")
 
@@ -94,6 +99,8 @@ class TokenTester(unittest.TestCase):
             "2dF": [2, operators.OPERATORS['d'], (-1, 0, 1)]
         }
         yield from self.token_conversions_mass_test(results.items())
+
+    def test_fudge_misplaced(self):
         with self.assertRaises(exceptions.ParseError):
             tokenizer.tokens('Fd6')
 
