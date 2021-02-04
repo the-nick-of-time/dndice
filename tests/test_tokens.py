@@ -5,6 +5,14 @@ from dndice.lib import exceptions, operators, tokenizer
 
 
 class TokenTester(unittest.TestCase):
+    def compare_result(self, string, token):
+        self.assertEqual(tokenizer.tokens(string), token,
+                         '{} was supposed to parse into {}'.format(string, token))
+
+    def token_conversions_mass_test(self, items):
+        for string, token in items:
+            yield self.compare_result, string, token
+
     def test_literal(self):
         results = {
             "1": [1],
@@ -25,13 +33,10 @@ class TokenTester(unittest.TestCase):
             for code, op in operators.OPERATORS.items()
             if op.arity == operators.Side.BOTH
         }
-        for s, tok in itertools.chain(unary.items(), binary.items()):
-            self.assertEqual(tokenizer.tokens(s), tok,
-                             '{} was supposed to parse into {}'.format(s, tok))
+        yield from self.token_conversions_mass_test(itertools.chain(unary.items(), binary.items()))
 
     def test_parentheses(self):
         results = {
-            # "()": ["(", ")"],
             "(4)": ["(", 4, ")"],
             "(-4)": ["(", operators.OPERATORS['m'], 4, ")"],
             "2d(1d4)": [2, operators.OPERATORS['d'], "(", 1, operators.OPERATORS['d'], 4, ")"],
@@ -39,9 +44,7 @@ class TokenTester(unittest.TestCase):
             "(2)*((4)+(8))": ["(", 2, ")", operators.OPERATORS['*'], "(", "(", 4, ")",
                               operators.OPERATORS['+'], "(", 8, ")", ")"]
         }
-        for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok,
-                             '{} was supposed to parse into {}'.format(s, tok))
+        yield from self.token_conversions_mass_test(results.items())
 
     def test_precedence(self):
         results = {
@@ -51,9 +54,7 @@ class TokenTester(unittest.TestCase):
             "2+++6": [2, operators.OPERATORS['+'], operators.OPERATORS['p'],
                       operators.OPERATORS['p'], 6]
         }
-        for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok,
-                             '{} was supposed to parse into {}'.format(s, tok))
+        yield from self.token_conversions_mass_test(results.items())
 
     def test_whitespace(self):
         results = {
@@ -62,9 +63,7 @@ class TokenTester(unittest.TestCase):
             "( 2d[1, 4,  6] ) ": ['(', 2, operators.OPERATORS['d'], (1, 4, 6), ')'],
             "     \t  \n ": [],
         }
-        for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok,
-                             '{} was supposed to parse into {}'.format(s, tok))
+        yield from self.token_conversions_mass_test(results.items())
 
     def test_error(self):
         cases = [
@@ -84,8 +83,7 @@ class TokenTester(unittest.TestCase):
             "1d[1,5,9]": [1, operators.OPERATORS['d'], (1, 5, 9)],
             "1d[1.5,5,9]": [1, operators.OPERATORS['d'], (1.5, 5, 9)],
         }
-        for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok)
+        yield from self.token_conversions_mass_test(results.items())
         with self.assertRaises(exceptions.ParseError):
             tokenizer.tokens("[4,5,6]+3")
         with self.assertRaises(exceptions.ParseError):
@@ -95,8 +93,7 @@ class TokenTester(unittest.TestCase):
         results = {
             "2dF": [2, operators.OPERATORS['d'], (-1, 0, 1)]
         }
-        for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok)
+        yield from self.token_conversions_mass_test(results.items())
         with self.assertRaises(exceptions.ParseError):
             tokenizer.tokens('Fd6')
 
@@ -122,17 +119,13 @@ class TokenTester(unittest.TestCase):
         results = {
             "4!-4": [4, operators.OPERATORS['!'], operators.OPERATORS['-'], 4],
         }
-        for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok,
-                             '{} was supposed to parse into {}'.format(s, tok))
+        yield from self.token_conversions_mass_test(results.items())
 
     def test_multi_character(self):
         results = {
             '10 >= 5': [10, operators.OPERATORS['>='], 5]
         }
-        for s, tok in results.items():
-            self.assertEqual(tokenizer.tokens(s), tok,
-                             '{} was supposed to parse into {}'.format(s, tok))
+        yield from self.token_conversions_mass_test(results.items())
 
 
 if __name__ == '__main__':
