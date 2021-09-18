@@ -1,0 +1,67 @@
+#!/bin/bash
+# See https://github.com/adriancooney/Taskfile for examples
+
+# Sane error handling 
+set -e -o pipefail
+
+function already_open {
+	opened="$(poetry run python list-fftabs.py)"
+	# implicit return the exit status of grep
+	grep -q "$1$" <<<"$opened"
+}
+
+### FUNCTIONS GO HERE
+function task:default {
+	# Fill this to run a default task (with whatever arguments you want too)
+	task:test
+}
+
+function task:test {
+	poetry run nose2 --verbose
+}
+
+function task:docs {
+	target="docs/_build/html/index.html"
+	poetry run make "$target"
+	if ! already_open "$target" ; then
+		firefox "$target"
+	fi
+}
+
+function task:build {
+	poetry run make "dist/dndice-$(poetry version --short)-py3-none-any.whl"
+}
+
+function task:publish {
+	task:build
+	poetry publish
+}
+
+function task:coverage {
+	target="htmlcov/index.html"
+	poetry run make "$target"
+	if ! already_open "$target" ; then
+		firefox "$target"
+	fi
+}
+
+function task:test_compatibility {
+	for v in "python:3.5-alpine" "python:3.8-alpine" "jamiehewland/alpine-pypy:3.6-alpine3.11" ; do
+		docker build -t dndice_compat --build-arg image="$v" . && docker run --rm --name rolling_test dndice_compat
+	done
+}
+
+function task:clean {
+	git clean -xdf -e '/venv' -e '/.idea'
+}
+
+### /FUNCTIONS GO HERE
+
+# Auto-generate list of tasks
+function task:help {
+	echo "$0 <task> <args>"
+	echo "Tasks:"
+	compgen -A function | grep '^task:' | cut -d':' -f2- | cat -n
+}
+
+"task:${@:-default}"
