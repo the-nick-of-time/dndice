@@ -2,7 +2,7 @@
 # See https://github.com/adriancooney/Taskfile for examples
 
 # Sane error handling 
-set -e -o pipefail
+set -o errexit -o pipefail
 
 function already_open {
 	opened="$(poetry run python list-fftabs.py)"
@@ -11,16 +11,18 @@ function already_open {
 }
 
 ### FUNCTIONS GO HERE
-function task:default {
-	# Fill this to run a default task (with whatever arguments you want too)
+function default {
+	: "By default, run test suite"
 	task:test
 }
 
 function task:test {
+	: "Run unit test suite"
 	poetry run nose2 --verbose
 }
 
 function task:docs {
+	: "Build and open docs"
 	target="docs/_build/html/index.html"
 	poetry run make "$target"
 	if ! already_open "$target" ; then
@@ -29,15 +31,18 @@ function task:docs {
 }
 
 function task:build {
+	: "Build wheel from the sources"
 	poetry run make "dist/dndice-$(poetry version --short)-py3-none-any.whl"
 }
 
 function task:publish {
+	: "Publish to PyPi"
 	task:build
 	poetry publish
 }
 
 function task:coverage {
+	: "Compile and open unit test coverage statistics"
 	target="htmlcov/index.html"
 	poetry run make "$target"
 	if ! already_open "$target" ; then
@@ -46,12 +51,14 @@ function task:coverage {
 }
 
 function task:test_compatibility {
+	: "Run the test suite against multiple versions of python, including one of pypy"
 	for v in "python:3.5-alpine" "python:3.8-alpine" "jamiehewland/alpine-pypy:3.6-alpine3.11" ; do
 		docker build -t dndice_compat --build-arg image="$v" . && docker run --rm --name rolling_test dndice_compat
 	done
 }
 
 function task:clean {
+	: "Clean up generated files"
 	git clean -xdf -e '/venv' -e '/.idea'
 }
 
@@ -59,9 +66,18 @@ function task:clean {
 
 # Auto-generate list of tasks
 function task:help {
+	: "Auto-generate a list of tasks"
 	echo "$0 <task> <args>"
 	echo "Tasks:"
-	compgen -A function | grep '^task:' | cut -d':' -f2- | cat -n
+	compgen -A function | grep '^task:' | cut -d':' -f 2- | while read -r name ; do
+		paste <(printf '%s' "$name") <(type "task:$name" | sed -n '4p')
+	done
 }
 
-"task:${@:-default}"
+if [[ $# -eq 0 ]] ; then
+	default
+else
+	cmd="$1"
+	shift
+	"task:$cmd" "$@"
+fi
