@@ -6,6 +6,6 @@ before_install:
 install:
   - poetry install
 script:
-  - make build
+  - ./Taskfile build
 after_success:
   - coveralls
