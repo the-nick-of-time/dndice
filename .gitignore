@@ -7,5 +7,5 @@
 # test coverage reports
 /htmlcov/
 /.coverage
-# virtualenv
-/venv/
+# deploy artifacts
+*.tar.gz

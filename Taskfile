@@ -1,7 +1,7 @@
 #!/bin/bash
 # See https://github.com/adriancooney/Taskfile for examples
 
-# Sane error handling 
+# Sane error handling
 set -o errexit -o pipefail
 
 function already_open {
@@ -28,6 +28,15 @@ function task:docs {
 	if ! already_open "$target" ; then
 		firefox "$target"
 	fi
+}
+
+function task:upload_docs {
+	: "Upload docs to my pi"
+	target="docs/_build/html/index.html"
+	poetry run make "$target"
+	tar c -zf docs.tar.gz -C docs/_build/html .
+	scp docs.tar.gz server@nthurmes.duckdns.org:/tmp
+	ssh server@nthurmes.duckdns.org "mkdir -p /var/www/docs/dndice/ && tar x -zf /tmp/docs.tar.gz -C /var/www/docs/dndice"
 }
 
 function task:build {
