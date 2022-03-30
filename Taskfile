@@ -30,13 +30,11 @@ function task:docs {
 	fi
 }
 
-function task:upload_docs {
-	: "Upload docs to my pi"
+function task:deploy_docs {
+	: "Put the HTML documentation onto my pi"
 	target="docs/_build/html/index.html"
-	poetry run make "$target"
-	tar c -zf docs.tar.gz -C docs/_build/html .
-	scp docs.tar.gz server@nthurmes.duckdns.org:/tmp
-	ssh server@nthurmes.duckdns.org "mkdir -p /var/www/docs/dndice/ && tar x -zf /tmp/docs.tar.gz -C /var/www/docs/dndice"
+	docs_theme=nature poetry run make "$target"
+	tar c -z -C docs/_build/html . | ssh -i ~/.ssh/server_id server@nthurmes.duckdns.org 'mkdir -p /var/www/docs/dndice && cat | tar x -z -C /var/www/docs/dndice'
 }
 
 function task:build {
