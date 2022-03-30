@@ -73,11 +73,11 @@ function task:clean {
 
 # Auto-generate list of tasks
 function task:help {
-	: "Auto-generate a list of tasks"
-	echo "$0 <task> <args>"
-	echo "Tasks:"
-	compgen -A function | grep '^task:' | cut -d':' -f 2- | while read -r name ; do
-		paste <(printf '%s' "$name") <(type "task:$name" | sed -n '4p')
+	: "Auto-generate list of tasks, including documentation in the form of these noop statements"
+	compgen -A function | while read -r name ; do
+		if [[ $name =~ ^task ]] ; then
+			paste <(printf '%s' "${name#task:}") <(type "$name" | sed -nEe 's/^[[:space:]]*: ?"(.*)";/\1/p')
+		fi
 	done
 }
 
