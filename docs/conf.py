@@ -15,17 +15,15 @@ import sys
 
 sys.path.insert(0, os.path.abspath('..'))
 
-import sphinx_rtd_theme
-
 # -- Project information -----------------------------------------------------
 
 project = 'dndice'
 copyright = '2019, Nick Thurmes'
 author = 'Nick Thurmes'
 
-version = '2.1.2'
+version = os.getenv('VERSION')
 # The full version, including alpha/beta/rc tags
-release = '2.1.2'
+release = '{}-{}'.format(os.getenv('VERSION'), os.getenv('COMMIT'))
 
 # -- General configuration ---------------------------------------------------
 
