@@ -2,7 +2,7 @@
 # See https://github.com/adriancooney/Taskfile for examples
 
 # Sane error handling
-set -o errexit -o pipefail
+set -o errexit -o pipefail -o nounset
 
 function already_open {
 	opened="$(poetry run python list-fftabs.py)"
@@ -69,15 +69,23 @@ function task:clean {
 	git clean -xdf -e '/venv' -e '/.idea'
 }
 
+function task:coveralls {
+	: "Upload coverage data to coveralls to use badge"
+	if [[ ! $(git symbolic-ref HEAD) = refs/heads/master ]] || [[ -z "$(git status --porcelain)" ]] ; then
+		echo "Must be on the main branch and have a clean working tree for results to be meaningful." >&2
+		return 1
+	fi
+	task:coverage
+	poetry run coveralls
+}
+
 ### /FUNCTIONS GO HERE
 
 # Auto-generate list of tasks
 function task:help {
-	: "Auto-generate list of tasks, including documentation in the form of these noop statements"
-	compgen -A function | while read -r name ; do
-		if [[ $name =~ ^task ]] ; then
-			paste <(printf '%s' "${name#task:}") <(type "$name" | sed -nEe 's/^[[:space:]]*: ?"(.*)";/\1/p')
-		fi
+	: "Auto-generate a list of tasks"
+	compgen -A function | grep '^task:' | cut -d':' -f 2- | while read -r name ; do
+		paste <(printf '%s' "$name") <(type "task:$name" | sed -nE 's/[[:space:]]+: "(.*)";$/\1/p')
 	done
 }
 
