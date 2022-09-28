@@ -21,6 +21,9 @@ coverage = "^5.5"
 [tool.poetry.scripts]
 roll = "dndice:roller.main"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^6.0"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
