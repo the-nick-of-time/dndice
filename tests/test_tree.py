@@ -1,40 +1,10 @@
-import itertools
-
 import pytest
 
 from dndice.lib.evaltree import EvalTreeNode, EvalTree
 from dndice.lib.exceptions import EvaluationError, InputTypeError
-from dndice.lib.operators import OPERATORS, random, Roll
-
-
-def trees_equal(a: EvalTree, b: EvalTree) -> bool:
-    for nodeA, nodeB in itertools.zip_longest(a.pre_order(), b.pre_order(),
-                                              fillvalue=EvalTreeNode(None)):
-        if nodeA.payload != nodeB.payload:
-            return False
-    return True
-
-
-def tree_empty(tree: EvalTree) -> bool:
-    for node in tree.pre_order():
-        if node.value is not None:
-            return False
-    return True
-
-
-@pytest.fixture
-def mock_randint(monkeypatch):
-    rands = itertools.chain([1, 20, 1, 20, 1, 20], itertools.repeat(4))
-
-    def randint(start, end):
-        return next(rands)
-
-    monkeypatch.setattr(random, "randint", randint)
-
-
-@pytest.fixture
-def tree_eq(monkeypatch):
-    monkeypatch.setattr(EvalTree, "__eq__", trees_equal)
+from dndice.lib.operators import OPERATORS, Roll
+# noinspection PyUnresolvedReferences
+from tests.utilities import tree_empty, mock_randint, tree_eq
 
 
 def test_node():
