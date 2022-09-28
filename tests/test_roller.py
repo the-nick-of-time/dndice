@@ -11,31 +11,36 @@ from dndice import roller
 sentinel = object()
 
 
-def test_arg_mode(monkeypatch):
+@pytest.mark.parametrize("argv,expected", [
+    (['-a', '1d4'], (True, False, False)),
+    (['-c', '1d4'], (False, True, False)),
+    (['-m', '1d4'], (False, False, True)),
+])
+def test_arg_mode(argv, expected, monkeypatch):
     with monkeypatch.context() as m:
-        m.setattr(sys, 'argv', ['roller.py', '-a', '1d4'])
-        assert roller.parse().average
-        assert not roller.parse().critical
-        assert not roller.parse().maximum
-    with monkeypatch.context() as m:
-        m.setattr(sys, 'argv', ['roller.py', '-c', '1d4'])
-        assert roller.parse().critical
-    with monkeypatch.context() as m:
-        m.setattr(sys, 'argv', ['roller.py', '-m', '1d4'])
-        assert roller.parse().maximum
+        m.setattr(sys, 'argv', ['roller.py'] + argv)
+        p = roller.parse()
+        assert (p.average, p.critical, p.maximum) == expected
+
+
+def test_arg_mode_singular(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(sys, 'argv', ['roller.py', '-m', '-c', '1d4'])
         with pytest.raises(SystemExit):
             roller.parse()
 
 
-def test_arg_number(monkeypatch):
+@pytest.mark.parametrize("argv,expected", [
+    [['-n', '10', '1d4'], 10],
+    [['1d4'], 1],
+])
+def test_arg_number(argv, expected, monkeypatch):
     with monkeypatch.context() as m:
-        m.setattr(sys, 'argv', ['roller.py', '-n', '10', '1d4'])
-        assert roller.parse().number == 10
-    with monkeypatch.context() as m:
-        m.setattr(sys, 'argv', ['roller.py', '1d4'])
-        assert roller.parse().number == 1
+        m.setattr(sys, 'argv', ['roller.py'] + argv)
+        assert roller.parse().number == expected
+
+
+def test_arg_is_number(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(sys, 'argv', ['roller.py', '-n', 'b', '1d4'])
         with pytest.raises(SystemExit):
@@ -62,7 +67,6 @@ def test_arg_expression(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(sys, 'argv', ['roller.py', '1d4', '2d6'])
         assert roller.parse().expression == ['1d4', '2d6']
-
 
 
 def base_args(**kwargs):
