@@ -4,8 +4,6 @@ from dndice import basic, Mode, compile, tokenize, verbose, tokenize_lazy
 from dndice.lib.evaltree import EvalTree, EvalTreeNode
 from dndice.lib.exceptions import InputTypeError
 from dndice.lib.operators import OPERATORS, Roll
-# noinspection PyUnresolvedReferences
-from tests.utilities import tree_empty, mock_randint, tree_eq
 
 
 @pytest.mark.parametrize("roll,mode,modifiers,expected", [

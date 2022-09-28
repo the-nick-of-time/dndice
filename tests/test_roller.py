@@ -4,52 +4,65 @@ from argparse import Namespace
 from unittest import TestCase
 from unittest.mock import patch, Mock
 
+import pytest
+
 from dndice import roller
 
 sentinel = object()
 
 
-class TestParser(TestCase):
-    def setUp(self):
-        self.stdout = io.StringIO()
-        self.stderr = io.StringIO()
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
+def test_arg_mode(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-a', '1d4'])
+        assert roller.parse().average
+        assert not roller.parse().critical
+        assert not roller.parse().maximum
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-c', '1d4'])
+        assert roller.parse().critical
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-m', '1d4'])
+        assert roller.parse().maximum
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-m', '-c', '1d4'])
+        with pytest.raises(SystemExit):
+            roller.parse()
 
-    def test_mode(self):
-        with patch.object(sys, 'argv', ['roller.py', '-a', '1d4']):
-            self.assertTrue(roller.parse().average)
-            self.assertFalse(roller.parse().critical)
-            self.assertFalse(roller.parse().maximum)
-        with patch.object(sys, 'argv', ['roller.py', '-c', '1d4']):
-            self.assertTrue(roller.parse().critical)
-        with patch.object(sys, 'argv', ['roller.py', '-m', '1d4']):
-            self.assertTrue(roller.parse().maximum)
-        with patch.object(sys, 'argv', ['roller.py', '-m', '-c', '1d4']):
-            self.assertRaises(SystemExit, roller.parse)
 
-    def test_number(self):
-        with patch.object(sys, 'argv', ['roller.py', '-n', '10', '1d4']):
-            self.assertEqual(roller.parse().number, 10)
-        with patch.object(sys, 'argv', ['roller.py', '1d4']):
-            self.assertEqual(roller.parse().number, 1)
-        with patch.object(sys, 'argv', ['roller.py', '-n', 'b', '1d4']):
-            self.assertRaises(SystemExit, roller.parse)
+def test_arg_number(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-n', '10', '1d4'])
+        assert roller.parse().number == 10
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '1d4'])
+        assert roller.parse().number == 1
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-n', 'b', '1d4'])
+        with pytest.raises(SystemExit):
+            roller.parse()
 
-    def test_display_flags(self):
-        with patch.object(sys, 'argv', ['roller.py', '-w', '10', '1d4']):
-            self.assertEqual(roller.parse().wrap, 10)
-        with patch.object(sys, 'argv', ['roller.py', '-v', '1d4']):
-            self.assertTrue(roller.parse().verbose)
-        with patch.object(sys, 'argv', ['roller.py', '-vc', '1d4']):
-            self.assertTrue(roller.parse().verbose)
-            self.assertTrue(roller.parse().critical)
 
-    def test_expression(self):
-        with patch.object(sys, 'argv', ['roller.py', '1d4']):
-            self.assertEqual(roller.parse().expression, ['1d4'])
-        with patch.object(sys, 'argv', ['roller.py', '1d4', '2d6']):
-            self.assertEqual(roller.parse().expression, ['1d4', '2d6'])
+def test_arg_display_flags(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-w', '10', '1d4'])
+        assert roller.parse().wrap == 10
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-v', '1d4'])
+        assert roller.parse().verbose
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '-vc', '1d4'])
+        assert roller.parse().verbose
+        assert roller.parse().critical
+
+
+def test_arg_expression(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '1d4'])
+        assert roller.parse().expression == ['1d4']
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['roller.py', '1d4', '2d6'])
+        assert roller.parse().expression == ['1d4', '2d6']
+
 
 
 def base_args(**kwargs):

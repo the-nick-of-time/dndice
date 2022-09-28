@@ -3,8 +3,13 @@ import pytest
 from dndice.lib.evaltree import EvalTreeNode, EvalTree
 from dndice.lib.exceptions import EvaluationError, InputTypeError
 from dndice.lib.operators import OPERATORS, Roll
-# noinspection PyUnresolvedReferences
-from tests.utilities import tree_empty, mock_randint, tree_eq
+
+
+def tree_empty(tree: EvalTree) -> bool:
+    for node in tree.pre_order():
+        if node.value is not None:
+            return False
+    return True
 
 
 def test_node():

@@ -14,13 +14,6 @@ def trees_equal(a: EvalTree, b: EvalTree) -> bool:
     return True
 
 
-def tree_empty(tree: EvalTree) -> bool:
-    for node in tree.pre_order():
-        if node.value is not None:
-            return False
-    return True
-
-
 @pytest.fixture
 def mock_randint(monkeypatch):
     rands = itertools.chain([1, 20, 1, 20, 1, 20], itertools.repeat(4))
