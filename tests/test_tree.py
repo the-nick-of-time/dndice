@@ -384,7 +384,7 @@ def test_print_unnecessary_parentheses():
     assert tree.verbose_result() == '1+2*4 = 9'
 
 
-def test_in_order_roundtrip():
+def test_in_order_roundtrip(tree_eq):
     tree = EvalTree('(2)*(4+8)')
     tokens = [node.payload for node in tree.in_order()]
     reconstructed = EvalTree(tokens)
