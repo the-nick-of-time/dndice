@@ -15,7 +15,7 @@ docs/_build/html/index.html: $(documentation) $(sources)
 	VERSION=$(version) COMMIT=$(shell git rev-parse --short HEAD) sphinx-build -b $(docs_format) -D html_theme=$(docs_theme) "docs" "docs/_build/$(docs_format)"
 
 .coverage: $(sources) $(tests) .coveragerc
-	coverage run -m nose2 --verbose
+	coverage run -m pytest --verbose
 	coverage report
 
 htmlcov/index.html: .coverage

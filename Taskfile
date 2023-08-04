@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # See https://github.com/adriancooney/Taskfile for examples
 
 # Sane error handling
@@ -18,7 +18,7 @@ function default {
 
 function task:test {
 	: "Run unit test suite"
-	poetry run nose2 --verbose
+	poetry run pytest
 }
 
 function task:docs {
@@ -51,7 +51,7 @@ function task:publish {
 function task:coverage {
 	: "Compile and open unit test coverage statistics"
 	target="htmlcov/index.html"
-	poetry run make "$target"
+	make "$target"
 	if ! already_open "$target" ; then
 		firefox "$target"
 	fi
@@ -66,12 +66,12 @@ function task:test_compatibility {
 
 function task:clean {
 	: "Clean up generated files"
-	git clean -xdf -e '/venv' -e '/.idea'
+	git clean -xdf -e '/.idea'
 }
 
 function task:coveralls {
 	: "Upload coverage data to coveralls to use badge"
-	if [[ ! $(git symbolic-ref HEAD) = refs/heads/master ]] || [[ -z "$(git status --porcelain)" ]] ; then
+	if [[ ! $(git symbolic-ref HEAD) = refs/heads/main ]] || [[ -z "$(git status --porcelain)" ]] ; then
 		echo "Must be on the main branch and have a clean working tree for results to be meaningful." >&2
 		return 1
 	fi
