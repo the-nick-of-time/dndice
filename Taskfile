@@ -45,7 +45,7 @@ function task:build {
 function task:publish {
 	: "Publish to PyPi"
 	task:build
-	poetry publish
+	POETRY_PYPI_TOKEN_PYPI="$PYPI_DNDICE" poetry publish
 }
 
 function task:coverage {
@@ -76,7 +76,7 @@ function task:coveralls {
 		return 1
 	fi
 	task:coverage
-	poetry run coveralls
+	COVERALLS_REPO_TOKEN="$COVERALLS_DNDICE" poetry run coveralls
 }
 
 ### /FUNCTIONS GO HERE
